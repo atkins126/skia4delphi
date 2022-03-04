@@ -31,12 +31,21 @@ const
   LibraryWin32BinaryDir = 'Binary\Win32\Release';
   LibraryiOSDevice64BinaryDir = 'Binary\iOSDevice64\Release';
 
+/// <summary> Get the custom param on build </summary>
+function _OnGetBuildCustonParam(): string; forward;
 /// <summary> Try to extract pre-build objects binaries when the command line compilation has failed </summary>
 function _OnTryExtractPreBuildObjects(const AInfo: TRADStudioInfo): Boolean; forward;
 /// <summary> Make custom changes before the installation </summary>
 function _OnTryPrepareProjectInstallation(var AProjectItem: TRADStudioGroupProjectItem; const AInfo: TRADStudioInfo): Boolean; forward;  
 /// <summary> Make custom changes before the uninstallation </summary>
 function _OnTryPrepareProjectUninstallation(var AProjectItem: TRADStudioGroupProjectItem; const AInfo: TRADStudioInfo): Boolean; forward;
+/// <summary> Try to unregister old bpl </summary>
+procedure _UnregisterOldBpl(const AProjectItem: TRADStudioGroupProjectItem; const AInfo: TRADStudioInfo); forward;
+
+function _OnGetBuildCustonParam(): string;
+begin
+  Result := 'Skia4Delphi_Setup=true';
+end;
 
 function _OnTryExtractPreBuildObjects(const AInfo: TRADStudioInfo): Boolean;
 #ifdef UseLibraryDCUFolder
@@ -126,6 +135,7 @@ begin
   Result := TryRemoveRADStudioEnvVariable(AInfo.Version, LibraryDirVariable);
   Result := TryRemoveRADStudioPathEnvVariable(AInfo.Version, CombinePath(LAppPath, LibraryWin32BinaryDir)) and Result;
   Result := TryRemoveRADStudioLibrarySearchPath(AInfo.Version, pfiOSDevice64, CombinePath(LibraryDirDefine, LibraryiOSDevice64BinaryDir)) and Result;
+  _UnregisterOldBpl(AProjectItem, AInfo);
   if not Result then
     Log(Format('Skia4Delphi._OnTryPrepareProjectUninstallation: Failed to prepare the project "%s"', [AProjectItem.Project.FileName]));
 end;
@@ -133,6 +143,7 @@ end;
 <event('InitializeSetup')>
 function _Skia4DelphiInitializeSetup: Boolean;
 begin
+  FOnGetBuildCustonParam := @_OnGetBuildCustonParam;
   FOnTryExtractPreBuildObjects := @_OnTryExtractPreBuildObjects;
   FOnTryPrepareProjectInstallation := @_OnTryPrepareProjectInstallation;
   FOnTryPrepareProjectUninstallation := @_OnTryPrepareProjectUninstallation;
@@ -144,6 +155,32 @@ function _Skia4DelphiInitializeUninstall: Boolean;
 begin
   FOnTryPrepareProjectUninstallation := @_OnTryPrepareProjectUninstallation;
   Result := True;
+end;
+
+procedure _UnregisterOldBpl(const AProjectItem: TRADStudioGroupProjectItem; const AInfo: TRADStudioInfo);
+var
+  LOldSuffix: string;
+  LVersion: Int64;
+  LMajor, LMinor, LRevision, LBuild: Word;
+begin
+  Log(Format('Skia4Delphi._UnregisterOldBpl: Unregistering old bpl of "%s" project...', [AProjectItem.Project.FileName]));
+  if not StrToVersion(AInfo.Version.RegVersion, LVersion) then
+    Exit;
+  UnpackVersionComponents(LVersion, LMajor, LMinor, LRevision, LBuild);
+  case LMajor of
+    15: LOldSuffix := '.DelphiXE7';
+    16: LOldSuffix := '.DelphiXE8';
+    17: LOldSuffix := '.Delphi10Seattle';
+    18: LOldSuffix := '.Delphi10Berlin';
+    19: LOldSuffix := '.Delphi10Tokyo';
+    20: LOldSuffix := '.Delphi10Rio';
+    21: LOldSuffix := '.Delphi10Sydney';
+    22: LOldSuffix := '.Delphi11Alexandria';
+  else
+    Exit;
+  end;
+  if not TryUnregisterRADStudioBpl(AInfo.Version, ChangeFileExt(AProjectItem.Project.FileName, LOldSuffix + '.bpl')) then
+    Log(Format('Skia4Delphi._UnregisterOldBpl: Failed to unregister old bpl of "%s" project...', [AProjectItem.Project.FileName]));
 end;
 
 // end.

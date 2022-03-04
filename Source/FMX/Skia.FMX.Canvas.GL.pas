@@ -15,9 +15,6 @@ interface
 
 {$SCOPEDENUMS ON}
 
-// Delphi currently uses rasterization on macOS when Metal is off.
-// If it uses OpenGL on MacOS in the future, the implementation is ready.
-
 {$IF DEFINED(MSWINDOWS) or DEFINED(ANDROID) or DEFINED(IOS)}
 
 uses
@@ -29,9 +26,8 @@ uses
   Androidapi.Gles2,
   {$ELSEIF DEFINED(IOS)}
   iOSapi.OpenGLES,
-  //{$ELSEIF DEFINED(MACOS)}
-  //Macapi.CocoaTypes,
   {$ENDIF}
+  System.Generics.Collections,
 
   { Skia }
   Skia,
@@ -39,40 +35,58 @@ uses
 
 
 type
-  { TGrGlContext }
+  { IGrGlContext }
 
-  TGrGlContext = class abstract
+  IGrGlContext = interface
+    ['{00129575-EB27-4220-8E3C-ACEA0EE42C4A}']
+    procedure MakeCurrent;
+    procedure MakeCurrentOffScreen;
+    procedure SwapBuffers;
+  end;
+
+  { TGrGlContext<T> }
+
+  TGrGlContext<T> = class abstract(TInterfacedObject, IGrGlContext)
   strict private
-    FWindowAttached: Boolean;
+    FContext: T;
+    FNativeWindow: THandle;
+    procedure MakeCurrent;
+    procedure MakeCurrentOffScreen;
+    procedure SwapBuffers;
   strict protected
-    [Weak] FWindow: TWindowHandle;
+    class function DoCreateContext(const ANativeWindow: THandle): T; virtual; abstract;
+    class function DoCreateNativeWindow(const AWindow: TWindowHandle): THandle; virtual; abstract;
+    class procedure DoDestroyContext(const ANativeWindow: THandle; const AContext: T); virtual; abstract;
+    class procedure DoDestroyNativeWindow(const ANativeWindow: THandle); virtual;
+    class function DoGetCurrentContext: T; virtual; abstract;
+    class procedure DoMakeCurrent(const AContext: T); virtual; abstract;
+    class procedure DoMakeCurrentOffScreen(const AContext: T); virtual;
+    class procedure DoSwapBuffers(const AContext: T); virtual;
   public
-    constructor Create(const AWindow: TWindowHandle);
-    procedure FlushBuffers; virtual;
-    procedure MakeCurrentContext; virtual; abstract;
-    property WindowAttached: Boolean read FWindowAttached write FWindowAttached;
-    class procedure Finalize; virtual;
-    class procedure Initialize; virtual;
+    constructor Create(const ANativeWindow: THandle; const AContext: T);
+    destructor Destroy; override;
+    class procedure CreateSharedResources; virtual;
+    class procedure DestroySharedResources; virtual;
+    class function MakeFromWindow(const AWindow: TWindowHandle): IGrGlContext;
   end;
 
   { TGrCanvasGl }
 
   TGrCanvasGl = class(TGrCanvasCustom)
   strict private
-    FContext: TGrGlContext;
+    FNativeContext: IGrGlContext;
+    FWindowAttached: Boolean;
   strict protected
-    procedure AttachToWindow; override;
-    function CreateContext: IGrDirectContext; override;
-    procedure DestroyContext; override;
-    procedure DetachFromWindow; override;
+    function BeginWindow(const AContextHandle: THandle): ISkSurface; override;
+    function CreateDirectContext: IGrDirectContext; override;
+    function CreateSurfaceFromWindow: ISkSurface; override;
+    procedure EndWindow; override;
+    procedure FinalizeContext; override;
     procedure Flush; override;
-    function GetRenderTarget: IGrBackendRenderTarget; override;
-    procedure Prepare; override;
+    function InitializeContext: Boolean; override;
+    procedure PrepareContext; override;
     class procedure Finalize; override;
     class procedure Initialize; override;
-  public
-    class function ColorType: TSkColorType; override;
-    class function Origin: TGrSurfaceOrigin; override;
   end;
 
 implementation
@@ -87,20 +101,15 @@ uses
   {$ELSEIF DEFINED(ANDROID)}
   Androidapi.Egl,
   Androidapi.JNI.GraphicsContentViewText,
+  Androidapi.JNIBridge,
   Androidapi.NativeWindow,
   Androidapi.NativeWindowJni,
   FMX.Platform.UI.Android,
   FMX.Presentation.Android.Style,
-  Androidapi.JNIBridge,
   {$ELSEIF DEFINED(IOS)}
   FMX.Platform.iOS,
   iOSapi.GLKit,
   Macapi.ObjectiveC,
-  //{$ELSEIF DEFINED(MACOS)}
-  //FMX.Platform.Mac,
-  //Macapi.AppKit,
-  //Macapi.ObjectiveC,
-  //Macapi.OpenGL,
   {$ENDIF}
   System.SysUtils;
 
@@ -108,41 +117,60 @@ type
 
 {$IF DEFINED(MSWINDOWS)}
 
+  { TGrGlWindowsContext }
+
+  TGrGlWindowsContext = record
+    DC: HDC;
+    Context: HGLRC;
+    constructor Create(const ADC: HDC; const AContext: HGLRC);
+  end;
+
   { TGrGlWindows }
 
-  TGrGlWindows = class(TGrGlContext)
-  strict private
-    FContext: HGLRC;
-    FDC: HDC;
-  public
-    constructor Create(const AWindow: TWindowHandle);
-    destructor Destroy; override;
-    procedure FlushBuffers; override;
-    procedure MakeCurrentContext; override;
+  TGrGlWindows = class(TGrGlContext<TGrGlWindowsContext>)
+  strict protected
+    class function DoCreateContext(const ANativeWindow: THandle): TGrGlWindowsContext; override;
+    class function DoCreateNativeWindow(const AWindow: TWindowHandle): THandle; override;
+    class procedure DoDestroyContext(const ANativeWindow: THandle; const AContext: TGrGlWindowsContext); override;
+    class function DoGetCurrentContext: TGrGlWindowsContext; override;
+    class procedure DoMakeCurrent(const AContext: TGrGlWindowsContext); override;
+    class procedure DoSwapBuffers(const AContext: TGrGlWindowsContext); override;
   end;
 
   TGrGlNativeContext = TGrGlWindows;
 
 {$ELSEIF DEFINED(ANDROID)}
 
+  { TGrGlesAndroidContext }
+
+  TGrGlesAndroidContext = record
+    Display: EGLDisplay;
+    SurfaceToDraw: EGLSurface;
+    SurfaceToRead: EGLSurface;
+    Context: EGLContext;
+    constructor Create(const ADisplay: EGLDisplay; const ASurfaceToDraw, ASurfaceToRead: EGLSurface; const AContext: EGLContext);
+  end;
+
   { TGrGlesAndroid }
 
-  TGrGlesAndroid = class(TGrGlContext)
+  TGrGlesAndroid = class(TGrGlContext<TGrGlesAndroidContext>)
   strict private class var
-    FSharedContext: EGLContext;
     FSharedConfig: EGLConfig;
     FSharedDisplay: EGLDisplay;
-    FSharedSurface: EGLSurface;
   strict private
-    FANativeWindow: PANativeWindow;
-    FSurface: EGLSurface;
+    class procedure RaiseLastError; inline;
+  strict protected
+    class function DoCreateContext(const ANativeWindow: THandle): TGrGlesAndroidContext; override;
+    class function DoCreateNativeWindow(const AWindow: TWindowHandle): THandle; override;
+    class procedure DoDestroyContext(const ANativeWindow: THandle; const AContext: TGrGlesAndroidContext); override;
+    class procedure DoDestroyNativeWindow(const ANativeWindow: THandle); override;
+    class function DoGetCurrentContext: TGrGlesAndroidContext; override;
+    class procedure DoMakeCurrent(const AContext: TGrGlesAndroidContext); override;
+    class procedure DoMakeCurrentOffScreen(const AContext: TGrGlesAndroidContext); override;
+    class procedure DoSwapBuffers(const AContext: TGrGlesAndroidContext); override;
   public
-    constructor Create(const AWindow: TWindowHandle);
-    destructor Destroy; override;
-    procedure FlushBuffers; override;
-    procedure MakeCurrentContext; override;
-    class procedure Finalize; override;
-    class procedure Initialize; override;
+    class procedure CreateSharedResources; override;
+    class procedure DestroySharedResources; override;
   end;
 
   TGrGlNativeContext = TGrGlesAndroid;
@@ -151,86 +179,53 @@ type
 
   { TGrGlesIOS }
 
-  TGrGlesIOS = class(TGrGlContext)
+  TGrGlesIOS = class(TGrGlContext<EAGLContext>)
   strict private class var
     FLibModule: HMODULE;
-    FSharedContext: EAGLContext;
+  strict protected
+    class function DoCreateContext(const ANativeWindow: THandle): EAGLContext; override;
+    class function DoCreateNativeWindow(const AWindow: TWindowHandle): THandle; override;
+    class procedure DoDestroyContext(const ANativeWindow: THandle; const AContext: EAGLContext); override;
+    class procedure DoDestroyNativeWindow(const ANativeWindow: THandle); override;
+    class function DoGetCurrentContext: EAGLContext; override;
+    class procedure DoMakeCurrent(const AContext: EAGLContext); override;
   public
-    constructor Create(const AWindow: TWindowHandle);
-    procedure MakeCurrentContext; override;
-    class procedure Finalize; override;
-    class procedure Initialize; override;
+    class procedure CreateSharedResources; override;
+    class procedure DestroySharedResources; override;
   end;
 
   TGrGlNativeContext = TGrGlesIOS;
 
-(*
-
-{$ELSEIF DEFINED(MACOS)}
-
-
-  { TGrGlMacOS }
-
-  TGrGlMacOS = class(TGrGlContext)
-  strict private class var
-    FLibModule: HMODULE;
-    FPixelFormat: NSOpenGLPixelFormat;
-  strict private
-    FContext: NSOpenGLContext;
-  public
-    constructor Create(const AWindow: TWindowHandle);
-    destructor Destroy; override;
-    procedure FlushBuffers; override;
-    procedure MakeCurrentContext; override;
-    class procedure Finalize; override;
-    class procedure Initialize; override;
-  end;
-
-  TGrGlNativeContext = TGrGlMacOS;
-
-*)
-
 {$ENDIF}
-
-{ TGrGlContext }
-
-constructor TGrGlContext.Create(const AWindow: TWindowHandle);
-begin
-  inherited Create;
-  FWindow := AWindow;
-end;
-
-class procedure TGrGlContext.Finalize;
-begin
-end;
-
-procedure TGrGlContext.FlushBuffers;
-begin
-end;
-
-class procedure TGrGlContext.Initialize;
-begin
-end;
 
 {$IF DEFINED(MSWINDOWS)}
 
+{ TGrGlWindowsContext }
+
+constructor TGrGlWindowsContext.Create(const ADC: HDC; const AContext: HGLRC);
+begin
+  Context := AContext;
+  DC      := ADC;
+end;
+
 { TGrGlWindows }
 
-constructor TGrGlWindows.Create(const AWindow: TWindowHandle);
+class function TGrGlWindows.DoCreateContext(
+  const ANativeWindow: THandle): TGrGlWindowsContext;
 const
   PixelFormatDescriptor: TPixelFormatDescriptor = (
     nSize           : SizeOf(TPixelFormatDescriptor);
     nVersion        : 1;
     dwFlags         : PFD_DRAW_TO_WINDOW or PFD_SUPPORT_OPENGL or PFD_DOUBLEBUFFER;
     iPixelType      : PFD_TYPE_RGBA;
-    cColorBits      : 24;
+    cColorBits      : 32;
     cRedBits        : 0;
     cRedShift       : 0;
     cGreenBits      : 0;
     cGreenShift     : 0;
     cBlueBits       : 0;
     cBlueShift      : 0;
-    cAlphaBits      : 8;
+    cAlphaBits      : 0;
     cAlphaShift     : 0;
     cAccumBits      : 0;
     cAccumRedBits   : 0;
@@ -246,121 +241,87 @@ const
     dwVisibleMask   : 0;
     dwDamageMask    : 0);
 var
+  LContext: HGLRC;
+  LDC: HDC;
   LPixelFormat: Integer;
 begin
-  inherited;
-  FDC := GetDC(WindowHandleToPlatform(AWindow).Wnd);
-  if FDC = 0 then
+  LDC := GetDC(ANativeWindow);
+  if LDC = 0 then
     RaiseLastOSError;
   try
-    LPixelFormat := ChoosePixelFormat(FDC, @PixelFormatDescriptor);
-    if (LPixelFormat = 0) or (not SetPixelFormat(FDC, LPixelFormat, @PixelFormatDescriptor)) then
+    LPixelFormat := ChoosePixelFormat(LDC, @PixelFormatDescriptor);
+    if (LPixelFormat = 0) or (not SetPixelFormat(LDC, LPixelFormat, @PixelFormatDescriptor)) then
       RaiseLastOSError;
-    FContext := wglCreateContext(FDC);
-    if FContext = 0 then
+    LContext := wglCreateContext(LDC);
+    if LContext = 0 then
       RaiseLastOSError;
-    try
-      if not wglMakeCurrent(FDC, FContext) then
-        RaiseLastOSError;
-    except
-      wglDeleteContext(FContext);
-      raise;
-    end;
+    Result := TGrGlWindowsContext.Create(LDC, LContext);
   except
-    ReleaseDC(WindowHandleToPlatform(AWindow).Wnd, FDC);
+    ReleaseDC(ANativeWindow, LDC);
     raise;
   end;
 end;
 
-destructor TGrGlWindows.Destroy;
+class function TGrGlWindows.DoCreateNativeWindow(
+  const AWindow: TWindowHandle): THandle;
 begin
-  wglDeleteContext(FContext);
-  ReleaseDC(WindowHandleToPlatform(FWindow).Wnd, FDC);
-  inherited;
+  if not (AWindow is TWinWindowHandle) then
+    Exit(0);
+  Result := TWinWindowHandle(AWindow).Wnd;
 end;
 
-procedure TGrGlWindows.FlushBuffers;
+class procedure TGrGlWindows.DoDestroyContext(const ANativeWindow: THandle;
+  const AContext: TGrGlWindowsContext);
 begin
-  if not SwapBuffers(FDC) then
+  wglMakeCurrent(0, 0);
+  wglDeleteContext(AContext.Context);
+  ReleaseDC(ANativeWindow, AContext.DC);
+end;
+
+class function TGrGlWindows.DoGetCurrentContext: TGrGlWindowsContext;
+begin
+  Result := TGrGlWindowsContext.Create(wglGetCurrentDC, wglGetCurrentContext);
+end;
+
+class procedure TGrGlWindows.DoMakeCurrent(const AContext: TGrGlWindowsContext);
+begin
+  if not wglMakeCurrent(AContext.DC, AContext.Context) then
     RaiseLastOSError;
 end;
 
-procedure TGrGlWindows.MakeCurrentContext;
+class procedure TGrGlWindows.DoSwapBuffers(const AContext: TGrGlWindowsContext);
 begin
-  if not wglMakeCurrent(FDC, FContext) then
+  if not Winapi.Windows.SwapBuffers(AContext.DC) then
     RaiseLastOSError;
 end;
 
 {$ELSEIF DEFINED(ANDROID)}
 
+{ TGrGlesAndroidContext }
+
+constructor TGrGlesAndroidContext.Create(const ADisplay: EGLDisplay;
+  const ASurfaceToDraw, ASurfaceToRead: EGLSurface; const AContext: EGLContext);
+begin
+  Display       := ADisplay;
+  SurfaceToDraw := ASurfaceToDraw;
+  SurfaceToRead := ASurfaceToRead;
+  Context       := AContext;
+end;
+
 { TGrGlesAndroid }
 
-constructor TGrGlesAndroid.Create(const AWindow: TWindowHandle);
+class procedure TGrGlesAndroid.CreateSharedResources;
 const
-  ContextAttributes: array[0..2] of EGLint = (EGL_CONTEXT_CLIENT_VERSION, 2, EGL_NONE);
-var
-  LANativeWindowSurface: JSurface;
-  LFormat: GLint;
-begin
-  inherited;
-  if eglMakeCurrent(FSharedDisplay, FSharedSurface, FSharedSurface, FSharedContext) = EGL_FALSE then
-    raise EGrCanvas.Create('Could not make EGL current shared context');
-  if AWindow is TAndroidWindowHandle then
-    LANativeWindowSurface := TAndroidWindowHandle(AWindow).Holder.getSurface
-  else if AWindow is TAndroidHandle then
-    LANativeWindowSurface := TJSurface.JavaClass.init(TAndroidHandle(AWindow).Surface)
-  else
-    raise EGrCanvas.Create('Invalid window');
-  FANativeWindow := ANativeWindow_fromSurface(TJNIResolver.GetJNIEnv, (LANativeWindowSurface as ILocalObject).GetObjectID);
-  if FANativeWindow = nil then
-    raise EGrCanvas.Create('Could not get ANativeWindow');
-  try
-    if eglGetConfigAttrib(FSharedDisplay, FSharedConfig, EGL_NATIVE_VISUAL_ID, @LFormat) = EGL_FALSE then
-      raise EGrCanvas.Create('Could not get EGL native visual ID');
-    if ANativeWindow_setBuffersGeometry(FANativeWindow, 0, 0, LFormat) <> 0 then
-      raise EGrCanvas.Create('Could not change the format of the window buffer');
-    FSurface := eglCreateWindowSurface(FSharedDisplay, FSharedConfig, FANativeWindow, nil);
-    if FSurface = EGL_NO_SURFACE then
-      raise EGrCanvas.Create('Could not create a new EGL window surface');
-  except
-    ANativeWindow_release(FANativeWindow);
-    raise;
-  end;
-end;
-
-destructor TGrGlesAndroid.Destroy;
-begin
-  eglMakeCurrent(FSharedDisplay, FSharedSurface, FSharedSurface, FSharedContext);
-  eglDestroySurface(FSharedDisplay, FSurface);
-  ANativeWindow_release(FANativeWindow);
-  inherited;
-end;
-
-class procedure TGrGlesAndroid.Finalize;
-begin
-  eglDestroyContext(FSharedDisplay, FSharedContext);
-  eglDestroySurface(FSharedDisplay, FSharedSurface);
-  eglTerminate(FSharedDisplay);
-end;
-
-procedure TGrGlesAndroid.FlushBuffers;
-begin
-  if eglSwapBuffers(FSharedDisplay, FSurface) = EGL_FALSE then
-    raise EGrCanvas.Create('Could not flush EGL buffers');
-end;
-
-class procedure TGrGlesAndroid.Initialize;
-const
-  ConfigAttributes: array[0..12] of EGLint = (
-    EGL_RENDERABLE_TYPE , EGL_OPENGL_ES2_BIT,
-    EGL_RED_SIZE        ,  8,
-    EGL_GREEN_SIZE      ,  8,
-    EGL_BLUE_SIZE       ,  8,
-    EGL_ALPHA_SIZE      ,  8,
-    EGL_STENCIL_SIZE    ,  8,
+  ConfigAttributes: array[0..16] of EGLint = (
+    EGL_SURFACE_TYPE    , EGL_WINDOW_BIT     ,
+    EGL_RENDERABLE_TYPE , EGL_OPENGL_ES2_BIT ,
+    EGL_RED_SIZE        , 8                  ,
+    EGL_GREEN_SIZE      , 8                  ,
+    EGL_BLUE_SIZE       , 8                  ,
+    EGL_ALPHA_SIZE      , 8                  ,
+    EGL_DEPTH_SIZE      , 0                  ,
+    EGL_STENCIL_SIZE    , 8                  ,
     EGL_NONE);
-
-  ContextAttributes: array[0..2] of EGLint = (EGL_CONTEXT_CLIENT_VERSION, 2, EGL_NONE);
 
   SurfaceAttributes: array[0..4] of EGLint = (EGL_WIDTH, 1, EGL_HEIGHT, 1, EGL_NONE);
 var
@@ -368,217 +329,348 @@ var
 begin
   FSharedDisplay := eglGetDisplay(EGL_DEFAULT_DISPLAY);
   if FSharedDisplay = EGL_NO_DISPLAY then
-    raise EGrCanvas.Create('Could not get EGL display');
+    RaiseLastError;
   if eglInitialize(FSharedDisplay, nil, nil) = EGL_FALSE then
-    raise EGrCanvas.Create('Could not initialize EGL display');
+    RaiseLastError;
   try
     if eglChooseConfig(FSharedDisplay, @ConfigAttributes[0], @FSharedConfig, 1, @LNumConfig) = EGL_FALSE then
-      raise EGrCanvas.Create('Could not choose EGL config');
-    FSharedSurface := eglCreatePbufferSurface(FSharedDisplay, FSharedConfig, @SurfaceAttributes[0]);
-    if FSharedSurface = EGL_NO_SURFACE then
-      raise EGrCanvas.Create('Could not create EGL shared surface');
-    try
-      FSharedContext := eglCreateContext(FSharedDisplay, FSharedConfig, EGL_NO_CONTEXT, @ContextAttributes[0]);
-      if FSharedContext = EGL_NO_CONTEXT then
-        raise EGrCanvas.Create('Could not create EGL context');
-    except
-      eglDestroySurface(FSharedDisplay, FSharedSurface);
-      raise;
-    end;
+      RaiseLastError;
   except
     eglTerminate(FSharedDisplay);
     raise;
   end;
 end;
 
-procedure TGrGlesAndroid.MakeCurrentContext;
+class procedure TGrGlesAndroid.DestroySharedResources;
+begin
+  eglTerminate(FSharedDisplay);
+end;
+
+class function TGrGlesAndroid.DoCreateContext(
+  const ANativeWindow: THandle): TGrGlesAndroidContext;
+const
+  ContextAttributes: array[0..2] of EGLint = (EGL_CONTEXT_CLIENT_VERSION, 2, EGL_NONE);
 var
+  LContext: EGLContext;
   LSurface: EGLSurface;
 begin
-  if WindowAttached then
-    LSurface := FSurface
+  LContext := eglCreateContext(FSharedDisplay, FSharedConfig, EGL_NO_CONTEXT, @ContextAttributes[0]);
+  if LContext = EGL_NO_CONTEXT then
+    RaiseLastError;
+  try
+    LSurface := eglCreateWindowSurface(FSharedDisplay, FSharedConfig, PANativeWindow(ANativeWindow), nil);
+    if LSurface = EGL_NO_SURFACE then
+      RaiseLastError;
+    Result := TGrGlesAndroidContext.Create(FSharedDisplay, LSurface, LSurface, LContext);
+  except
+    eglDestroyContext(FSharedDisplay, LContext);
+    raise;
+  end;
+end;
+
+class function TGrGlesAndroid.DoCreateNativeWindow(
+  const AWindow: TWindowHandle): THandle;
+var
+  LANativeWindow: PANativeWindow;
+  LANativeWindowSurface: JSurface;
+  LANativeWindowSurfaceID: Pointer;
+begin
+  if AWindow is TAndroidWindowHandle then
+  begin
+    if TAndroidWindowHandle(AWindow).Holder = nil then
+      Exit(0);
+    LANativeWindowSurfaceID := (TAndroidWindowHandle(AWindow).Holder.getSurface as ILocalObject).GetObjectID;
+  end
+  else if AWindow is TAndroidHandle then
+  begin
+    if TAndroidHandle(AWindow).Surface = nil then
+      Exit(0);
+    LANativeWindowSurface   := TJSurface.JavaClass.init(TAndroidHandle(AWindow).Surface);
+    LANativeWindowSurfaceID := TJNIResolver.JavaInstanceToID(LANativeWindowSurface);
+  end
   else
-    LSurface := FSharedSurface;
-  if eglMakeCurrent(FSharedDisplay, LSurface, LSurface, FSharedContext) = EGL_FALSE then
-    raise EGrCanvas.Create('Could not make EGL current context');
+    Exit(0);
+  LANativeWindow := ANativeWindow_fromSurface(TJNIResolver.GetJNIEnv, LANativeWindowSurfaceID);
+  if LANativeWindow = nil then
+    RaiseLastOSError;
+  try
+    if ANativeWindow_setBuffersGeometry(LANativeWindow, 0, 0, WINDOW_FORMAT_RGBA_8888) <> 0 then
+      RaiseLastOSError;
+  except
+    ANativeWindow_release(LANativeWindow);
+    raise;
+  end;
+  Result := THandle(LANativeWindow);
+end;
+
+class procedure TGrGlesAndroid.DoDestroyContext(const ANativeWindow: THandle;
+  const AContext: TGrGlesAndroidContext);
+begin
+  eglMakeCurrent(AContext.Display, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
+  if AContext.SurfaceToDraw = AContext.SurfaceToRead then
+    eglDestroySurface(AContext.Display, AContext.SurfaceToDraw)
+  else
+  begin
+    eglDestroySurface(AContext.Display, AContext.SurfaceToDraw);
+    eglDestroySurface(AContext.Display, AContext.SurfaceToRead);
+  end;
+  eglDestroyContext(AContext.Display, AContext.Context);
+end;
+
+class procedure TGrGlesAndroid.DoDestroyNativeWindow(
+  const ANativeWindow: THandle);
+begin
+  ANativeWindow_release(PANativeWindow(ANativeWindow));
+end;
+
+class function TGrGlesAndroid.DoGetCurrentContext: TGrGlesAndroidContext;
+begin
+  Result := TGrGlesAndroidContext.Create(eglGetCurrentDisplay, eglGetCurrentSurface(EGL_DRAW), eglGetCurrentSurface(EGL_READ), eglGetCurrentContext);
+end;
+
+class procedure TGrGlesAndroid.DoMakeCurrent(
+  const AContext: TGrGlesAndroidContext);
+begin
+  if eglMakeCurrent(AContext.Display, AContext.SurfaceToDraw, AContext.SurfaceToRead, AContext.Context) = EGL_FALSE then
+    RaiseLastError;
+end;
+
+class procedure TGrGlesAndroid.DoMakeCurrentOffScreen(
+  const AContext: TGrGlesAndroidContext);
+begin
+  if eglMakeCurrent(AContext.Display, EGL_NO_SURFACE, EGL_NO_SURFACE, AContext.Context) = EGL_FALSE then
+    RaiseLastError;
+end;
+
+class procedure TGrGlesAndroid.DoSwapBuffers(
+  const AContext: TGrGlesAndroidContext);
+begin
+  if eglSwapBuffers(AContext.Display, AContext.SurfaceToDraw) = EGL_FALSE then
+    RaiseLastError;
+end;
+
+class procedure TGrGlesAndroid.RaiseLastError;
+var
+  LError: EGLint;
+begin
+  LError := eglGetError;
+  if LError = EGL_SUCCESS then
+    raise EGrCanvas.Create('Unknown OpenGLES error')
+  else
+    raise EGrCanvas.CreateFmt('OpenGLES error: $%x', [LError]);
 end;
 
 {$ELSEIF DEFINED(IOS)}
 
 { TGrGlesIOS }
 
-constructor TGrGlesIOS.Create(const AWindow: TWindowHandle);
-begin
-  inherited;
-  if not TEAGLContext.OCClass.setCurrentContext(FSharedContext) then
-    raise EGrCanvas.Create('Could not make EGL current shared context');
-  GLKView(WindowHandleToPlatform(AWindow).View).setContext(FSharedContext);
-  GLKView(WindowHandleToPlatform(AWindow).View).setDrawableColorFormat(GLKViewDrawableColorFormatRGBA8888);
-  GLKView(WindowHandleToPlatform(AWindow).View).setDrawableDepthFormat(GLKViewDrawableDepthFormatNone);
-  GLKView(WindowHandleToPlatform(AWindow).View).setDrawableStencilFormat(GLKViewDrawableStencilFormat8);
-  GLKView(WindowHandleToPlatform(AWindow).View).setDrawableMultisample(GLKViewDrawableMultisampleNone);
-end;
-
-class procedure TGrGlesIOS.Finalize;
-begin
-  FSharedContext.release;
-  FreeLibrary(FLibModule);
-end;
-
-class procedure TGrGlesIOS.Initialize;
+class procedure TGrGlesIOS.CreateSharedResources;
 begin
   FLibModule := LoadLibrary(PChar(libGLKit));
   if FLibModule = 0 then
-    raise EGrCanvas.Create('Unable to load GLES');
-  try
-    FSharedContext := TEAGLContext.Wrap(TEAGLContext.Alloc.initWithAPI(kEAGLRenderingAPIOpenGLES2));
-    if FSharedContext = nil then
-      raise EGrCanvas.Create('Could not create EGL context');
-  except
-    FreeLibrary(FLibModule);
-    raise;
-  end;
+    RaiseLastOSError;
 end;
 
-procedure TGrGlesIOS.MakeCurrentContext;
+class procedure TGrGlesIOS.DestroySharedResources;
 begin
-  if not TEAGLContext.OCClass.setCurrentContext(FSharedContext) then
-    raise EGrCanvas.Create('Could not make EGL current context');
+  FreeLibrary(FLibModule);
 end;
 
-(*
-
-{$ELSEIF DEFINED(MACOS)}
-
-{ TGrGlMacOS }
-
-constructor TGrGlMacOS.Create(const AWindow: TWindowHandle);
+class function TGrGlesIOS.DoCreateContext(
+  const ANativeWindow: THandle): EAGLContext;
+var
+  LView: GLKView;
 begin
-  inherited;
-  FContext := TNSOpenGLContext.Wrap(TNSOpenGLContext.Alloc.initWithFormat(FPixelFormat, nil));
-  if FContext = nil then
-    raise EGrCanvas.Create('Could not create EGL context');
-  FContext.makeCurrentContext;
-  FContext.setView(WindowHandleToPlatform(AWindow).View);
+  LView  := TGLKView.Wrap(Pointer(ANativeWindow));
+  Result := TEAGLContext.Wrap(TEAGLContext.Alloc.initWithAPI(kEAGLRenderingAPIOpenGLES2));
+  LView.setContext(Result);
 end;
 
-destructor TGrGlMacOS.Destroy;
+class function TGrGlesIOS.DoCreateNativeWindow(
+  const AWindow: TWindowHandle): THandle;
+var
+  LView: GLKView;
 begin
-  FContext.release;
-  inherited;
+  if (not (AWindow is TiOSWindowHandle)) or (TiOSWindowHandle(AWindow).View = nil) or (not Supports(TiOSWindowHandle(AWindow).View, GLKView, LView)) then
+    Exit(0);
+  Result := THandle((LView as ILocalObject).GetObjectID);
+  LView.retain;
 end;
 
-class procedure TGrGlMacOS.Finalize;
+class procedure TGrGlesIOS.DoDestroyContext(const ANativeWindow: THandle;
+  const AContext: EAGLContext);
 begin
-  FPixelFormat.release;
+  TEAGLContext.OCClass.setCurrentContext(nil);
+  AContext.release;
 end;
 
-procedure TGrGlMacOS.FlushBuffers;
+class procedure TGrGlesIOS.DoDestroyNativeWindow(const ANativeWindow: THandle);
+var
+  LView: GLKView;
 begin
-  glSwapAPPLE;
+  LView := TGLKView.Wrap(Pointer(ANativeWindow));
+  LView.release;
 end;
 
-class procedure TGrGlMacOS.Initialize;
-const
-  Options: array[0..9] of NSOpenGLPixelFormatAttribute = (
-    NSOpenGLPFADoubleBuffer ,
-    NSOpenGLPFAColorSize    , 24,
-    NSOpenGLPFAAlphaSize    ,  8,
-    NSOpenGLPFAStencilSize  ,  8,
-    0);
+class function TGrGlesIOS.DoGetCurrentContext: EAGLContext;
 begin
-  FLibModule := InitOpenGL;
-  if FLibModule = 0 then
-    raise EGrCanvas.Create('Unable to load GL');
-  try
-    FPixelFormat := TNSOpenGLPixelFormat.Wrap(TNSOpenGLPixelFormat.Alloc.initWithAttributes(@Options[0]));
-    if FPixelFormat = nil then
-      raise EGrCanvas.Create('Could not create GL pixel format');
-  except
-    FreeLibrary(FLibModule);
-    raise;
-  end;
+  Result := TEAGLContext.Wrap(TEAGLContext.OCClass.currentContext);
 end;
 
-procedure TGrGlMacOS.MakeCurrentContext;
+class procedure TGrGlesIOS.DoMakeCurrent(const AContext: EAGLContext);
 begin
-  FContext.makeCurrentContext;
+  if not TEAGLContext.OCClass.setCurrentContext(AContext) then
+    RaiseLastOSError;
 end;
-
-*)
 
 {$ENDIF}
 
+{ TGrGlContext<T> }
+
+constructor TGrGlContext<T>.Create(const ANativeWindow: THandle;
+  const AContext: T);
+begin
+  FNativeWindow := ANativeWindow;
+  FContext      := AContext;
+end;
+
+class procedure TGrGlContext<T>.CreateSharedResources;
+begin
+end;
+
+destructor TGrGlContext<T>.Destroy;
+begin
+  DoDestroyContext(FNativeWindow, FContext);
+  DoDestroyNativeWindow(FNativeWindow);
+  inherited;
+end;
+
+class procedure TGrGlContext<T>.DestroySharedResources;
+begin
+end;
+
+class procedure TGrGlContext<T>.DoDestroyNativeWindow(
+  const ANativeWindow: THandle);
+begin
+end;
+
+class procedure TGrGlContext<T>.DoMakeCurrentOffScreen(const AContext: T);
+begin
+  DoMakeCurrent(AContext);
+end;
+
+class procedure TGrGlContext<T>.DoSwapBuffers(const AContext: T);
+begin
+end;
+
+procedure TGrGlContext<T>.MakeCurrent;
+begin
+  DoMakeCurrent(FContext);
+end;
+
+procedure TGrGlContext<T>.MakeCurrentOffScreen;
+begin
+  DoMakeCurrentOffScreen(FContext);
+end;
+
+class function TGrGlContext<T>.MakeFromWindow(
+  const AWindow: TWindowHandle): IGrGlContext;
+var
+  LContext: T;
+  LNativeHandle: THandle;
+begin
+  LNativeHandle := DoCreateNativeWindow(AWindow);
+  if LNativeHandle = 0 then
+    Exit(nil);
+  try
+    LContext := DoCreateContext(LNativeHandle);
+  except
+    DoDestroyNativeWindow(LNativeHandle);
+    raise;
+  end;
+  Result := Create(LNativeHandle, LContext);
+end;
+
+procedure TGrGlContext<T>.SwapBuffers;
+begin
+  DoSwapBuffers(FContext);
+end;
+
 { TGrCanvasGl }
 
-procedure TGrCanvasGl.AttachToWindow;
+function TGrCanvasGl.BeginWindow(const AContextHandle: THandle): ISkSurface;
 begin
-  FContext.WindowAttached := True;
+  FWindowAttached := True;
+  try
+    Result := inherited;
+  finally
+    FWindowAttached := Assigned(Result);
+  end;
 end;
 
-class function TGrCanvasGl.ColorType: TSkColorType;
+function TGrCanvasGl.CreateDirectContext: IGrDirectContext;
 begin
-  Result := TSkColorType.RGBA8888;
+  Result := TGrDirectContext.MakeGl;
 end;
 
-function TGrCanvasGl.CreateContext: IGrDirectContext;
-begin
-  FContext := TGrGlNativeContext.Create(Parent);
-  Result   := TGrDirectContext.MakeGl;
-end;
-
-procedure TGrCanvasGl.DestroyContext;
-begin
-  inherited;
-  FContext.Free;
-end;
-
-procedure TGrCanvasGl.DetachFromWindow;
-begin
-  FContext.WindowAttached := False;
-end;
-
-class procedure TGrCanvasGl.Finalize;
-begin
-  inherited;
-  TGrGlNativeContext.Finalize;
-end;
-
-procedure TGrCanvasGl.Flush;
-begin
-  FContext.FlushBuffers;
-end;
-
-function TGrCanvasGl.GetRenderTarget: IGrBackendRenderTarget;
+function TGrCanvasGl.CreateSurfaceFromWindow: ISkSurface;
 var
   LFramebuffer: GLuint;
   LMaxSamples: Integer;
+  LRenderTarget: IGrBackendRenderTarget;
   LSamples: GLint;
   LStencilBits: GLint;
 begin
   glGetIntegerv(GL_FRAMEBUFFER_BINDING, @LFramebuffer);
   glGetIntegerv(GL_STENCIL_BITS, @LStencilBits);
   glGetIntegerv(GL_SAMPLES, @LSamples);
-  LMaxSamples := Context.GetMaxSurfaceSampleCountForColorType(ColorType);
+  LMaxSamples := Context.GetMaxSurfaceSampleCountForColorType(TSkColorType.RGBA8888);
   if LSamples > LMaxSamples then
     LSamples := LMaxSamples;
-  Result := TGrBackendRenderTarget.CreateGl(DrawableWidth, DrawableHeight, LSamples, LStencilBits, TGrGlFramebufferInfo.Create(LFramebuffer, GrGlSizedFormat[ColorType]));
+  LRenderTarget := TGrBackendRenderTarget.CreateGl(DrawableWidth, DrawableHeight, LSamples, LStencilBits, TGrGlFramebufferInfo.Create(LFramebuffer, GrGlSizedFormat[TSkColorType.RGBA8888]));
+  Result        := TSkSurface.MakeFromRenderTarget(Context, LRenderTarget, TGrSurfaceOrigin.BottomLeft, TSkColorType.RGBA8888);
+end;
+
+procedure TGrCanvasGl.EndWindow;
+begin
+  inherited;
+  FWindowAttached := False;
+end;
+
+class procedure TGrCanvasGl.Finalize;
+begin
+  inherited;
+  TGrGlNativeContext.DestroySharedResources;
+end;
+
+procedure TGrCanvasGl.FinalizeContext;
+begin
+  FNativeContext := nil;
+end;
+
+procedure TGrCanvasGl.Flush;
+begin
+  FNativeContext.SwapBuffers;
 end;
 
 class procedure TGrCanvasGl.Initialize;
 begin
+  TGrGlNativeContext.CreateSharedResources;
   inherited;
-  TGrGlNativeContext.Initialize;
 end;
 
-class function TGrCanvasGl.Origin: TGrSurfaceOrigin;
+function TGrCanvasGl.InitializeContext: Boolean;
 begin
-  Result := TGrSurfaceOrigin.BottomLeft;
+  FNativeContext := TGrGlNativeContext.MakeFromWindow(Parent);
+  Result         := Assigned(FNativeContext);
 end;
 
-procedure TGrCanvasGl.Prepare;
+procedure TGrCanvasGl.PrepareContext;
 begin
-  FContext.MakeCurrentContext;
+  if FWindowAttached then
+    FNativeContext.MakeCurrent
+  else
+    FNativeContext.MakeCurrentOffScreen;
 end;
 
 {$ELSE}
