@@ -365,8 +365,8 @@ begin
   LRADStudioVersion.MinDprojVersion := '18.5';
   LRADStudioVersion.PackageVersion := '260';
   LRADStudioVersion.HasGetItCmd := False; // It has but is obsolete
-  LRADStudioVersion.GetItCmdListInstalledParams := '-l="%s" -c=useoffline -dnsef';
-  LRADStudioVersion.GetItCmdUninstallParams := '-u="%s" -c=useoffline -dnsef';
+  LRADStudioVersion.GetItCmdListInstalledParams := '-l="%s" -dnsef';
+  LRADStudioVersion.GetItCmdUninstallParams := '-u="%s" -dnsef';
   LRADStudioVersion.DotNetVersion := net45;
   LRADStudioVersion.DotNetServicePack := 0;
   SetArrayLength(_FRADStudioVersions, GetArrayLength(_FRADStudioVersions) + 1);
@@ -380,8 +380,8 @@ begin
   LRADStudioVersion.MinDprojVersion := '19.0';
   LRADStudioVersion.PackageVersion := '270';
   LRADStudioVersion.HasGetItCmd := True;
-  LRADStudioVersion.GetItCmdListInstalledParams := '-l="%s" -c=useoffline -dnsef';
-  LRADStudioVersion.GetItCmdUninstallParams := '-u="%s" -c=useoffline -dnsef';
+  LRADStudioVersion.GetItCmdListInstalledParams := '-l="%s" -dnsef';
+  LRADStudioVersion.GetItCmdUninstallParams := '-u="%s" -dnsef';
   LRADStudioVersion.DotNetVersion := net45;
   LRADStudioVersion.DotNetServicePack := 0;
   SetArrayLength(_FRADStudioVersions, GetArrayLength(_FRADStudioVersions) + 1);
@@ -391,12 +391,12 @@ begin
   LRADStudioVersion.Name := 'RAD Studio 11.0 Alexandria';
   LRADStudioVersion.RegVersion := '22.0';         
   LRADStudioVersion.SupportedPlatforms := [pfWin32, pfWin64, pfAndroid, pfAndroid64, pfiOSDevice64, pfiOSSimulator, pfOSX64, pfOSXARM64, pfLinux64];
-  LRADStudioVersion.MaxDprojVersion := '19.3';
+  LRADStudioVersion.MaxDprojVersion := '19.4';
   LRADStudioVersion.MinDprojVersion := '19.3';
   LRADStudioVersion.PackageVersion := '280';
   LRADStudioVersion.HasGetItCmd := True;
-  LRADStudioVersion.GetItCmdListInstalledParams := '-l="%s" -c=useoffline -dnsef';
-  LRADStudioVersion.GetItCmdUninstallParams := '-u="%s" -c=useoffline -dnsef';
+  LRADStudioVersion.GetItCmdListInstalledParams := '-l="%s" -dnsef';
+  LRADStudioVersion.GetItCmdUninstallParams := '-u="%s" -dnsef';
   LRADStudioVersion.DotNetVersion := net45;
   LRADStudioVersion.DotNetServicePack := 0;
   SetArrayLength(_FRADStudioVersions, GetArrayLength(_FRADStudioVersions) + 1);
