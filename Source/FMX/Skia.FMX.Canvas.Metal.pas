@@ -22,8 +22,10 @@ interface
 uses
   { Delphi }
   {$IFDEF IOS}
+  iOSapi.CoreGraphics,
   FMX.Platform.iOS,
   {$ELSE}
+  Macapi.CocoaTypes,
   FMX.Platform.Mac,
   {$ENDIF}
   Macapi.Metal,
@@ -115,6 +117,29 @@ begin
   FCommandQueue := FSharedDevice.newCommandQueue;
   FView.retain;
   FView.setDevice(FSharedDevice);
+  {$REGION ' - Workaround RSP-37935'}
+  // - -------------------------------------------------------------------------
+  // - WORKAROUND
+  // - -------------------------------------------------------------------------
+  // -
+  // - Description:
+  // -   This code is a workaround to a problem when Zoomed setting is enabled
+  // -   on the OS then the form does not fit the screen
+  // -
+  // - Bug report:
+  // -   https://quality.embarcadero.com/browse/RSP-37935
+  // -
+  // - -------------------------------------------------------------------------
+  {$IF CompilerVersion > 35}
+    {$MESSAGE WARN 'Check if the issue has been fixed'}
+  {$ENDIF}
+  // - -------------------------------------------------------------------------
+  var LSize: CGSize;
+  LSize.width  := Width  * Scale;
+  LSize.height := Height * Scale;
+  FView.setDrawableSize(LSize);
+  // - -------------------------------------------------------------------------
+  {$ENDREGION}
   Result := True;
 end;
 
