@@ -2,10 +2,9 @@
 {                                                                        }
 {                              Skia4Delphi                               }
 {                                                                        }
-{ Copyright (c) 2011-2022 Google LLC.                                    }
-{ Copyright (c) 2021-2022 Skia4Delphi Project.                           }
+{ Copyright (c) 2021-2023 Skia4Delphi Project.                           }
 {                                                                        }
-{ Use of this source code is governed by a BSD-style license that can be }
+{ Use of this source code is governed by the MIT license that can be     }
 { found in the LICENSE file.                                             }
 {                                                                        }
 {************************************************************************}
@@ -19,9 +18,10 @@ uses
   { Delphi }
   System.SysUtils, System.Types, System.UITypes, System.Classes, FMX.Types,
   FMX.Controls, FMX.Forms, FMX.StdCtrls, FMX.Layouts, FMX.Objects,
+  FMX.Controls.Presentation,
 
   { Skia }
-  Skia, Skia.FMX,
+  System.Skia, FMX.Skia,
 
   { Sample }
   Sample.Form.Base;
@@ -101,7 +101,7 @@ begin
     LDocument := TSkDocument.MakeXPS(LDocumentStream);
     if LDocument = nil then
     begin
-      Showmessage('This OS doesn''t support XPS!');
+      ShowMessage('This OS doesn''t support XPS!');
       Exit;
     end;
     try
@@ -117,7 +117,7 @@ begin
   finally
     LDocumentStream.Free;
   end;
-  Showmessage('Created XPS file!');
+  ShowMessage('Created XPS file!');
 end;
 
 end.

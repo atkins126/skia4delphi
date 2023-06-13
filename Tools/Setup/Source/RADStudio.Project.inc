@@ -6,10 +6,9 @@
 {                                                                        }
 {                              Skia4Delphi                               }
 {                                                                        }
-{ Copyright (c) 2011-2022 Google LLC.                                    }
-{ Copyright (c) 2021-2022 Skia4Delphi Project.                           }
+{ Copyright (c) 2021-2023 Skia4Delphi Project.                           }
 {                                                                        }
-{ Use of this source code is governed by a BSD-style license that can be }
+{ Use of this source code is governed by the MIT license that can be     }
 { found in the LICENSE file.                                             }
 {                                                                        }
 {************************************************************************}
@@ -18,15 +17,16 @@
 // interface
 
 type
-  TProjectPlatform = (pfWin32, pfWin64, pfAndroid, pfAndroid64, pfiOSDevice32, pfiOSDevice64, pfiOSSimulator, pfOSX32, pfOSX64, pfOSXARM64, pfLinux64);
+  TProjectPlatform = (pfWin32, pfWin64, pfAndroid, pfAndroid64, pfiOSDevice32, pfiOSDevice64, pfiOSSimARM64, pfiOSSimulator, pfOSX32, pfOSX64, pfOSXARM64, pfLinux64);
   TProjectPlatforms = set of TProjectPlatform;
   TProjectConfig = (pcDebug, pcRelease);
   TProjectConfigs = set of TProjectConfig;
-  TProjectPersonality = (ppCPlusPlusBuilder, ppDelphi);
+  TProjectPersonality = (ppCBuilder, ppDelphi);
 
   TRADStudioProject = record
     FileName: string;
     Description: string;
+    SourceFiles: TArrayOfString;
     SourcePaths: TArrayOfString;
     BplOutputPath: string;
     DcpOutputPath: string;
@@ -35,6 +35,7 @@ type
     Platforms: TProjectPlatforms;
     ProjectVersion: string;
     Personality: TProjectPersonality;
+    IsDesignOnly: Boolean;
     IsPackage: Boolean;
     IsInstallable: Boolean;
     RequiresDCPCount: Integer;
@@ -55,6 +56,8 @@ type
 
   TRADStudioGroupProjects = array of TRADStudioGroupProject;
 
+/// <summary> Copy group project record </summary>
+function CopyRADStudioGroupProject(const AGroupProject: TRADStudioGroupProject): TRADStudioGroupProject; forward;
 /// <summary> Expand project path (directory or filename), expanding relative path, config and platform names </summary>
 function ExpandProjectPath(const APath: string; const AConfig: TProjectConfig; const APlatform: TProjectPlatform): string; forward;
 /// <summary> Get config name </summary>
@@ -103,8 +106,38 @@ const
 procedure _ExpandProjectRootPath(var APath: string; const ADefaultRootPath: string); forward;
 /// <summary> Ascendent sort of items of group project by RequiresDCPCount </summary>
 function _SortGroupProjectItems(AItems: TRADStudioGroupProjectItems): TRADStudioGroupProjectItems; forward;
-/// <summary> Try to get the an attribute value by the attribute name with case insensitive </summary>
-function _TryGetAttributeValue(const AXMLNode: Variant; const AAttributeName: string; out AValue: string): Boolean; forward;
+
+function CopyRADStudioGroupProject(const AGroupProject: TRADStudioGroupProject): TRADStudioGroupProject;
+var
+  I, J: Integer;
+begin
+  Result.FileName := AGroupProject.FileName;
+  SetArrayLength(Result.Items, GetArrayLength(AGroupProject.Items));
+  for I := 0 to GetArrayLength(Result.Items) - 1 do
+  begin
+    Result.Items[I].Project.FileName := AGroupProject.Items[I].Project.FileName;
+    Result.Items[I].Project.Description := AGroupProject.Items[I].Project.Description;
+    Result.Items[I].Project.BplOutputPath := AGroupProject.Items[I].Project.BplOutputPath;
+    Result.Items[I].Project.DcpOutputPath := AGroupProject.Items[I].Project.DcpOutputPath;
+    Result.Items[I].Project.DCUOutputPath := AGroupProject.Items[I].Project.DCUOutputPath;
+    Result.Items[I].Project.DllSuffix := AGroupProject.Items[I].Project.DllSuffix;
+    Result.Items[I].Project.Platforms := AGroupProject.Items[I].Project.Platforms;
+    Result.Items[I].Project.ProjectVersion := AGroupProject.Items[I].Project.ProjectVersion;
+    Result.Items[I].Project.Personality := AGroupProject.Items[I].Project.Personality;
+    Result.Items[I].Project.IsDesignOnly := AGroupProject.Items[I].Project.IsDesignOnly;
+    Result.Items[I].Project.IsPackage := AGroupProject.Items[I].Project.IsPackage;
+    Result.Items[I].Project.IsInstallable := AGroupProject.Items[I].Project.IsInstallable;
+    Result.Items[I].Project.RequiresDCPCount := AGroupProject.Items[I].Project.RequiresDCPCount;
+    SetArrayLength(Result.Items[I].Project.SourceFiles, GetArrayLength(AGroupProject.Items[I].Project.SourceFiles));
+    for J := 0 to GetArrayLength(AGroupProject.Items[I].Project.SourceFiles) - 1 do
+      Result.Items[I].Project.SourceFiles[J] := AGroupProject.Items[I].Project.SourceFiles[J];
+    SetArrayLength(Result.Items[I].Project.SourcePaths, GetArrayLength(AGroupProject.Items[I].Project.SourcePaths));
+    for J := 0 to GetArrayLength(AGroupProject.Items[I].Project.SourcePaths) - 1 do
+      Result.Items[I].Project.SourcePaths[J] := AGroupProject.Items[I].Project.SourcePaths[J];
+    Result.Items[I].Configs := AGroupProject.Items[I].Configs;
+    Result.Items[I].Platforms := AGroupProject.Items[I].Platforms;
+  end;
+end;
 
 function ExpandProjectPath(const APath: string; const AConfig: TProjectConfig; const APlatform: TProjectPlatform): string;
 begin
@@ -114,10 +147,10 @@ begin
   Result := ExpandConstant(Result);
   if Pos('$(', Result) = 0 then
     Result := ExpandFileName(Result);
-end; 
+end;
 
 procedure _ExpandProjectRootPath(var APath: string; const ADefaultRootPath: string);
-begin 
+begin
   if ExtractFileDrive(APath) = '' then
     APath := CombinePath(ADefaultRootPath, APath);
   APath := ExpandFileName(APath);
@@ -142,6 +175,7 @@ begin
     pfAndroid64   : Result := 'Android 64-bit';
     pfiOSDevice32 : Result := 'iOS Device 32-bit';
     pfiOSDevice64 : Result := 'iOS Device 64-bit';
+    pfiOSSimARM64 : Result := 'iOS Simulator ARM 64-bit';
     pfiOSSimulator: Result := 'iOS Simulator';
     pfOSX32       : Result := 'OSX 32-bit';
     pfOSX64       : Result := 'OSX 64-bit';
@@ -171,6 +205,7 @@ begin
     pfAndroid64   : Result := 'Android64';
     pfiOSDevice32 : Result := 'iOSDevice32';
     pfiOSDevice64 : Result := 'iOSDevice64';
+    pfiOSSimARM64 : Result := 'iOSSimARM64';
     pfiOSSimulator: Result := 'iOSSimulator';
     pfOSX32       : Result := 'OSX32';
     pfOSX64       : Result := 'OSX64';
@@ -182,7 +217,7 @@ begin
 end;
 
 function GetRADStudioProjectDcpOutputFileName(const AProject: TRADStudioProject): string;
-begin 
+begin
   Result := AddBackslash(AProject.DcpOutputPath) + ExtractFileName(ChangeFileExt(AProject.FileName, '.dcp'));
 end;
 
@@ -193,7 +228,7 @@ var
   LGroupProjectItem: TRADStudioGroupProjectItem;
   LProject: TRADStudioProject;
 begin
-  for I := 0 to GetArrayLength(AGroupProjects) - 1 do 
+  for I := 0 to GetArrayLength(AGroupProjects) - 1 do
   begin
     LGroupProject := AGroupProjects[I];
     StringChangeEx(LGroupProject.FileName, AddBackslash(AOldRootPath), AddBackslash(ANewRootPath), True);
@@ -202,6 +237,8 @@ begin
       LGroupProjectItem := LGroupProject.Items[J];
       LProject := LGroupProjectItem.Project;
       StringChangeEx(LProject.FileName, AddBackslash(AOldRootPath), AddBackslash(ANewRootPath), True);
+      for K := 0 to GetArrayLength(LProject.SourceFiles) - 1 do
+        StringChangeEx(LProject.SourceFiles[K], AddBackslash(AOldRootPath), AddBackslash(ANewRootPath), True);
       for K := 0 to GetArrayLength(LProject.SourcePaths) - 1 do
         StringChangeEx(LProject.SourcePaths[K], AddBackslash(AOldRootPath), AddBackslash(ANewRootPath), True);
       StringChangeEx(LProject.BplOutputPath, AddBackslash(AOldRootPath), AddBackslash(ANewRootPath), True);
@@ -223,7 +260,7 @@ var
   LProject: TRADStudioProject;
   LProjectPath: string;
 begin
-  for I := 0 to GetArrayLength(AGroupProjects) - 1 do 
+  for I := 0 to GetArrayLength(AGroupProjects) - 1 do
   begin
     LGroupProject := AGroupProjects[I];
     _ExpandProjectRootPath(LGroupProject.FileName, ADefaultRootPath);
@@ -234,9 +271,11 @@ begin
       LProject := LGroupProjectItem.Project;
       _ExpandProjectRootPath(LProject.FileName, LGroupProjectPath);
       LProjectPath := ExtractFilePath(LProject.FileName);
+      for K := 0 to GetArrayLength(LProject.SourceFiles) - 1 do
+        _ExpandProjectRootPath(LProject.SourceFiles[K], LProjectPath);
       for K := 0 to GetArrayLength(LProject.SourcePaths) - 1 do
         _ExpandProjectRootPath(LProject.SourcePaths[K], LProjectPath);
-      _ExpandProjectRootPath(LProject.BplOutputPath, LProjectPath);  
+      _ExpandProjectRootPath(LProject.BplOutputPath, LProjectPath);
       _ExpandProjectRootPath(LProject.DcpOutputPath, LProjectPath);
       _ExpandProjectRootPath(LProject.DCUOutputPath, LProjectPath);
       LGroupProjectItem.Project := LProject;
@@ -273,22 +312,6 @@ begin
     AItems[LMinIndex].Project := LProject;
   end;
   Result := LResult;
-end;
-
-function _TryGetAttributeValue(const AXMLNode: Variant; const AAttributeName: string; out AValue: string): Boolean;
-var
-  I: Integer;
-begin
-  Result := False;
-  for I := 0 to AXMLNode.Attributes.Length - 1 do
-  begin
-    if SameText(AXMLNode.Attributes[I].NodeName, AAttributeName) then
-    begin
-      AValue := AXMLNode.Attributes[I].NodeValue;
-      Result := True;
-      Exit;
-    end;
-  end;
 end;
 
 function TryGetRADStudioGroupProjectsFromPath(const APath: string; out AGroupProjects: TRADStudioGroupProjects): Boolean;
@@ -342,11 +365,11 @@ begin
       AGroupProject.Items := [];
       for I := 0 to LXMLNodeList.Length-1 do
       begin
-        if _TryGetAttributeValue(LXMLNodeList.Item[I], 'Include', LAttributeValue) then
+        if TryGetXMLNodeAttribute(LXMLNodeList.Item[I], 'Include', LAttributeValue) then
         begin
           LAttributeValue := ExtractFilePath(AGroupProject.FileName) + LAttributeValue;
-          if TryStrToProjectConfigs(LXMLNodeList.Item[I].SelectSingleNode('Configurations').Text, LItem.Configs) and
-            TryStrToProjectPlatforms(LXMLNodeList.Item[I].SelectSingleNode('Platforms').Text, LItem.Platforms) and
+          if TryStrToProjectConfigs(ReadXMLNodeText(LXMLNodeList.Item[I], 'Configurations', ''), LItem.Configs) and
+            TryStrToProjectPlatforms(ReadXMLNodeText(LXMLNodeList.Item[I], 'Platforms', ''), LItem.Platforms) and
             TryLoadRADStudioProject(LAttributeValue, LItem.Project) then
           begin
             SetArrayLength(AGroupProject.Items, GetArrayLength(AGroupProject.Items) + 1);
@@ -365,10 +388,9 @@ end;
 function TryLoadRADStudioProject(const AFileName: string; out AProject: TRADStudioProject): Boolean;
 var
   LPlatform: TProjectPlatform;
-  LXMLNode: Variant;
   LXMLNodeList: Variant;
   LXMLDocument: Variant;
-  LAttributeValue: string;
+  LText: string;
   I: Integer;
 begin
   Result := FileExists(AFileName);
@@ -389,26 +411,26 @@ begin
       end;
 
       // IsPackage
-      LXMLNode := LXMLDocument.SelectSingleNode('/Project/PropertyGroup/AppType');
-      AProject.IsPackage := LXMLNode.Text = 'Package';
+      AProject.IsPackage := ReadXMLNodeText(LXMLDocument, '/Project/PropertyGroup/AppType', '') = 'Package';
 
       // ProjectVersion
-      LXMLNode := LXMLDocument.SelectSingleNode('/Project/PropertyGroup/ProjectVersion');
-      AProject.ProjectVersion := LXMLNode.Text;
+      AProject.ProjectVersion := ReadXMLNodeText(LXMLDocument, '/Project/PropertyGroup/ProjectVersion', '');
 
       // IsInstallable
-      LXMLNode := LXMLDocument.SelectSingleNode('/Project/PropertyGroup[@Condition="''$(Base)''!=''''"]/RuntimeOnlyPackage');
-      AProject.IsInstallable := VarIsClear(LXMLNode) or not StrToBoolDef(LXMLNode.Text, False);
+      AProject.IsInstallable := not StrToBoolDef(ReadXMLNodeText(LXMLDocument, '/Project/PropertyGroup[@Condition="''$(Base)''!=''''"]/RuntimeOnlyPackage', ''), False);
+
+      // IsDesignOnly
+      AProject.IsDesignOnly := StrToBoolDef(ReadXMLNodeText(LXMLDocument, '/Project/PropertyGroup[@Condition="''$(Base)''!=''''"]/DesignOnlyPackage', ''), False);
 
       // Personality
-      LXMLNode := LXMLDocument.SelectSingleNode('/Project/ProjectExtensions/Borland.Personality');
-      if SameText(LXMLNode.Text, 'Delphi.Personality.12') then
+      LText := ReadXMLNodeText(LXMLDocument, '/Project/ProjectExtensions/Borland.Personality', '');
+      if SameText(LText, 'Delphi.Personality.12') then
         AProject.Personality := ppDelphi
-      else if SameText(LXMLNode.Text, 'CPlusPlusBuilder.Personality.12') then
-        AProject.Personality := ppCPlusPlusBuilder
+      else if SameText(LText, 'CPlusPlusBuilder.Personality.12') then
+        AProject.Personality := ppCBuilder
       else
       begin
-        TryShowErrorFmt(CustomMessage('RADStudioProjectErrorParsingProjectUnknownPersonality'), [AFileName, LXMLNode.Text]);
+        TryShowErrorFmt(CustomMessage('RADStudioProjectErrorParsingProjectUnknownPersonality'), [AFileName, LText]);
         Result := False;
         Exit;
       end;
@@ -418,8 +440,8 @@ begin
       AProject.Platforms := [];
       for I := 0 to LXMLNodeList.Length-1 do
       begin
-        if StrToBoolDef(LXMLNodeList.Item[I].Text, False) and _TryGetAttributeValue(LXMLNodeList.Item[I], 'Value', LAttributeValue) and
-          TryStrToProjectPlatform(LAttributeValue, LPlatform) then
+        if StrToBoolDef(LXMLNodeList.Item[I].Text, False) and TryGetXMLNodeAttribute(LXMLNodeList.Item[I], 'Value', LText) and
+          TryStrToProjectPlatform(LText, LPlatform) then
         begin
           Include(AProject.Platforms, LPlatform);
         end;
@@ -432,16 +454,19 @@ begin
       for I := 0 to LXMLNodeList.Length-1 do
       begin
         if EndsWithText(LXMLNodeList.Item[I].Text, '.pas') then
-          AProject.SourcePaths := AppendString(AProject.SourcePaths, RemoveBackslash(ExpandFileName(AddBackslash(ExtractFilePath(AFileName)) + ExtractFilePath(LXMLNodeList.Item[I].Text))), False)
+        begin
+          AProject.SourceFiles := AppendString(AProject.SourceFiles, RemoveBackslash(ExpandFileName(AddBackslash(ExtractFilePath(AFileName)) + LXMLNodeList.Item[I].Text)), False);
+          AProject.SourcePaths := AppendString(AProject.SourcePaths, RemoveBackslash(ExpandFileName(AddBackslash(ExtractFilePath(AFileName)) + ExtractFilePath(LXMLNodeList.Item[I].Text))), False);
+        end
         else if EndsWithText(LXMLNodeList.Item[I].Text, '.dcp') then
           AProject.RequiresDCPCount := AProject.RequiresDCPCount + 1;
       end;
 
-      AProject.BplOutputPath := LXMLDocument.SelectSingleNode('/Project/PropertyGroup[@Condition="''$(Base)''!=''''"]/DCC_BplOutput').Text;
-      AProject.DcpOutputPath := LXMLDocument.SelectSingleNode('/Project/PropertyGroup[@Condition="''$(Base)''!=''''"]/DCC_DcpOutput').Text;
-      AProject.DCUOutputPath := LXMLDocument.SelectSingleNode('/Project/PropertyGroup[@Condition="''$(Base)''!=''''"]/DCC_DcuOutput').Text;
-      AProject.Description := LXMLDocument.SelectSingleNode('/Project/PropertyGroup[@Condition="''$(Base)''!=''''"]/DCC_Description').Text;
-      AProject.DllSuffix := LXMLDocument.SelectSingleNode('/Project/PropertyGroup[@Condition="''$(Base)''!=''''"]/DllSuffix').Text;
+      AProject.BplOutputPath := ReadXMLNodeText(LXMLDocument, '/Project/PropertyGroup[@Condition="''$(Base)''!=''''"]/DCC_BplOutput', '');
+      AProject.DcpOutputPath := ReadXMLNodeText(LXMLDocument, '/Project/PropertyGroup[@Condition="''$(Base)''!=''''"]/DCC_DcpOutput', '');
+      AProject.DCUOutputPath := ReadXMLNodeText(LXMLDocument, '/Project/PropertyGroup[@Condition="''$(Base)''!=''''"]/DCC_DcuOutput', '');
+      AProject.Description := ReadXMLNodeText(LXMLDocument, '/Project/PropertyGroup[@Condition="''$(Base)''!=''''"]/DCC_Description', '');
+      AProject.DllSuffix := ReadXMLNodeText(LXMLDocument, '/Project/PropertyGroup[@Condition="''$(Base)''!=''''"]/DllSuffix', '');
     except
       TryShowErrorFmt(CustomMessage('RADStudioProjectErrorUnexpectedParsingProject'), [AFileName, GetExceptionMessage]);
       Result := False;
@@ -477,7 +502,7 @@ begin
     end;
     Include(AConfigs, LConfig);
   end;
-  Result := True;
+  Result := AConfigs <> [];
 end;
 
 function TryStrToProjectPlatform(const APlatformName: string; out APlatform: TProjectPlatform): Boolean;
@@ -499,6 +524,8 @@ begin
     APlatform := pfiOSDevice32
   else if SameText(APlatformName, 'iOSDevice64') then
     APlatform := pfiOSDevice64
+  else if SameText(APlatformName, 'iOSSimARM64') then
+    APlatform := pfiOSSimARM64
   else if SameText(APlatformName, 'iOSSimulator') then
     APlatform := pfiOSSimulator
   else if SameText(APlatformName, 'OSX32') then
@@ -530,7 +557,7 @@ begin
     end;
     Include(APlatforms, LPlatform);
   end;
-  Result := True;
+  Result := APlatforms <> [];
 end;
 
 // end.

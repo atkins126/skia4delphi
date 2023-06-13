@@ -2,10 +2,9 @@
 {                                                                        }
 {                              Skia4Delphi                               }
 {                                                                        }
-{ Copyright (c) 2011-2022 Google LLC.                                    }
-{ Copyright (c) 2021-2022 Skia4Delphi Project.                           }
+{ Copyright (c) 2021-2023 Skia4Delphi Project.                           }
 {                                                                        }
-{ Use of this source code is governed by a BSD-style license that can be }
+{ Use of this source code is governed by the MIT license that can be     }
 { found in the LICENSE file.                                             }
 {                                                                        }
 {************************************************************************}
@@ -21,7 +20,7 @@ uses
   DUnitX.TestFramework,
 
   { Skia }
-  Skia,
+  System.Skia,
 
   { Tests }
   Skia.Tests.Foundation;
@@ -32,12 +31,14 @@ type
   [TestFixture]
   TSkParagraphTests = class(TTestBase)
   public
-    {$IFDEF MACOS}
-    [TestCase('Simple Paragraph To Path', '0.99,AQEBAX3///9/+fFhf////3/5+3H/////////8/////+3////ABMAA//z//9+7wABCID///////8')]
-    {$ELSEIF DEFINED(ANDROID)}
-    [TestCase('Simple Paragraph To Path', '0.99,AAEBAX3///9/+XFhf////3/5cWH///////9/8//////3////ABMAA/9z//9+5wABAAD///////8')]
+    {$IF defined(IOS)}
+    [TestCase('Simple Paragraph To Path', '0.99,GQEBAW19////+fHh7//////58fHv////////8+/////3////AAMAA/9z//9+7wABAAD///////8')]
+    {$ELSEIF defined(MACOS)}
+    [TestCase('Simple Paragraph To Path', '0.99,GQEBAX3/////+fHh///////5+/H/////////8/////+3////ABMAA//z//9+7wABCID///////8')]
+    {$ELSEIF defined(ANDROID)}
+    [TestCase('Simple Paragraph To Path', '0.99,GQEBAW39////+fHh7//////58eH/////////4/////+3////ABMAA/9z//9+5wABAAD///////8')]
     {$ELSE}
-    [TestCase('Simple Paragraph To Path', '0.99,AAEBAX3///9/+XFhf//////5ceF///////9/43////+3////ABMAA/9z//9+5wABAAD///////8')]
+    [TestCase('Simple Paragraph To Path', '0.98,GQEBAW39////+fHh7//////58eH/////////4/////+3////ABMAA/9z//9+5wABAAD///////8')]
     {$ENDIF}
     procedure TestParagraphToPath(const AMinSimilarity: Double; const AExpectedHash: string);
     [Test]

@@ -2,10 +2,9 @@
 {                                                                        }
 {                              Skia4Delphi                               }
 {                                                                        }
-{ Copyright (c) 2011-2022 Google LLC.                                    }
-{ Copyright (c) 2021-2022 Skia4Delphi Project.                           }
+{ Copyright (c) 2021-2023 Skia4Delphi Project.                           }
 {                                                                        }
-{ Use of this source code is governed by a BSD-style license that can be }
+{ Use of this source code is governed by the MIT license that can be     }
 { found in the LICENSE file.                                             }
 {                                                                        }
 {************************************************************************}
@@ -39,7 +38,7 @@ package Skia.Package.FMX.Designtime;
 {$DESCRIPTION 'Skia4Delphi FMX Designtime package'}
 {$LIBSUFFIX '240'}
 {$DESIGNONLY}
-{$IMPLICITBUILD ON}
+{$IMPLICITBUILD OFF}
 
 requires
   rtl,
@@ -49,8 +48,8 @@ requires
   Skia.Package.FMX;
 
 contains
-  Skia.FMX.Designtime.Editor.AnimatedImage in '..\..\Source\FMX\Designtime\Skia.FMX.Designtime.Editor.AnimatedImage.pas' {SkAnimatedImageEditorForm},
-  Skia.FMX.Designtime.Editor.SVG in '..\..\Source\FMX\Designtime\Skia.FMX.Designtime.Editor.SVG.pas' {SkSvgEditorForm},
-  Skia.FMX.Designtime in '..\..\Source\FMX\Designtime\Skia.FMX.Designtime.pas';
+  FMX.Skia.Designtime.Editor.AnimatedImage in '..\..\Source\FMX\Designtime\FMX.Skia.Designtime.Editor.AnimatedImage.pas' {SkAnimatedImageEditorForm},
+  FMX.Skia.Designtime.Editor.SVG in '..\..\Source\FMX\Designtime\FMX.Skia.Designtime.Editor.SVG.pas' {SkSvgEditorForm},
+  FMX.Skia.Designtime in '..\..\Source\FMX\Designtime\FMX.Skia.Designtime.pas';
 
 end.

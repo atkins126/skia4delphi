@@ -2,14 +2,15 @@
 {                                                                        }
 {                              Skia4Delphi                               }
 {                                                                        }
-{ Copyright (c) 2011-2022 Google LLC.                                    }
-{ Copyright (c) 2021-2022 Skia4Delphi Project.                           }
+{ Copyright (c) 2021-2023 Skia4Delphi Project.                           }
 {                                                                        }
-{ Use of this source code is governed by a BSD-style license that can be }
+{ Use of this source code is governed by the MIT license that can be     }
 { found in the LICENSE file.                                             }
 {                                                                        }
 {************************************************************************}
 unit Sample.Form.Main;
+
+// Style created by https://www.delphistyles.com/
 
 interface
 
@@ -20,7 +21,7 @@ uses
   System.Classes, Vcl.Graphics, Vcl.Controls, Vcl.Forms, Vcl.StdCtrls, Vcl.ExtCtrls,
 
   { Skia }
-  Skia, Skia.Vcl,
+  System.Skia, Vcl.Skia,
 
   { Sample }
   Sample.Form.Base;
@@ -47,11 +48,6 @@ type
     lblImageTitle: TSkLabel;
     svgImageArrow: TSkSvg;
     pnlImageLine: TPanel;
-    pnlParticles: TPanel;
-    lblParticlesDescription: TSkLabel;
-    lblParticlesTitle: TSkLabel;
-    svgParticlesArrow: TSkSvg;
-    pnlParticlesLine: TPanel;
     pnlPathsAndEffects: TPanel;
     lblPathsAndEffectsDescription: TSkLabel;
     lblPathsAndEffectsTitle: TSkLabel;
@@ -82,12 +78,12 @@ type
     svgFilterArrow: TSkSvg;
     pnlFilterLine: TPanel;
     pnlTransformsLine: TPanel;
+    procedure FormShow(Sender: TObject);
     procedure pnlBasicsClick(Sender: TObject);
     procedure pnlControlsClick(Sender: TObject);
     procedure pnlDocumentsClick(Sender: TObject);
     procedure pnlFilterClick(Sender: TObject);
     procedure pnlImageClick(Sender: TObject);
-    procedure pnlParticlesClick(Sender: TObject);
     procedure pnlPathsAndEffectsClick(Sender: TObject);
     procedure pnlRuntimeEffectsClick(Sender: TObject);
     procedure pnlTextClick(Sender: TObject);
@@ -110,13 +106,19 @@ uses
   Sample.Form.Filter,
   Sample.Form.Image,
   Sample.Form.PathsAndEffects,
-  Sample.Form.Particles,
   Sample.Form.RuntimeEffects,
+  Sample.Form.SplashScreen,
   Sample.Form.Text,
   Sample.Form.Transforms,
   Sample.Form.Unicode;
 
 {$R *.dfm}
+
+procedure TfrmMain.FormShow(Sender: TObject);
+begin
+  inherited;
+  ChildForm<TfrmSplashScreen>.Show;
+end;
 
 procedure TfrmMain.pnlBasicsClick(Sender: TObject);
 begin
@@ -141,11 +143,6 @@ end;
 procedure TfrmMain.pnlImageClick(Sender: TObject);
 begin
   ChildForm<TfrmImage>.Show;
-end;
-
-procedure TfrmMain.pnlParticlesClick(Sender: TObject);
-begin
-  ChildForm<TfrmParticles>.Show;
 end;
 
 procedure TfrmMain.pnlPathsAndEffectsClick(Sender: TObject);

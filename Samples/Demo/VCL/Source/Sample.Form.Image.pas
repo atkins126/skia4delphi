@@ -2,10 +2,9 @@
 {                                                                        }
 {                              Skia4Delphi                               }
 {                                                                        }
-{ Copyright (c) 2011-2022 Google LLC.                                    }
-{ Copyright (c) 2021-2022 Skia4Delphi Project.                           }
+{ Copyright (c) 2021-2023 Skia4Delphi Project.                           }
 {                                                                        }
-{ Use of this source code is governed by a BSD-style license that can be }
+{ Use of this source code is governed by the MIT license that can be     }
 { found in the LICENSE file.                                             }
 {                                                                        }
 {************************************************************************}
@@ -21,7 +20,7 @@ uses
   Vcl.Controls, Vcl.Forms, Vcl.ExtCtrls,
 
   { Skia }
-  Skia, Skia.Vcl,
+  System.Skia, Vcl.Skia,
 
   { Sample }
   Sample.Form.Base;
@@ -62,9 +61,9 @@ uses
 
 function FormatBytes(const ABytesCount: Int64): string;
 const
-  KBYTES = Int64(1024);
+  KiloByte = Int64(1024);
 begin
-  Result := Format('%s KB', [FormatFloat('0.#', ABytesCount / KBYTES)]);
+  Result := Format('%s KB', [FormatFloat('0.#', ABytesCount / KiloByte)]);
 end;
 
 procedure TfrmImage.pnlEncodeWebpVsJpegClick(Sender: TObject);

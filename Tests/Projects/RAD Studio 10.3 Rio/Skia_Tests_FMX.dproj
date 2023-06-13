@@ -1,8 +1,7 @@
 ﻿<!--
- Copyright (c) 2011-2022 Google LLC.
- Copyright (c) 2021-2022 Skia4Delphi Project.
+ Copyright (c) 2021-2023 Skia4Delphi Project.
 
- Use of this source code is governed by a BSD-style license that can be
+ Use of this source code is governed by the MIT license that can be
  found in the LICENSE file.
 -->
 <Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
@@ -85,7 +84,7 @@
         <AUP_READ_PHONE_STATE>true</AUP_READ_PHONE_STATE>
         <AUP_WRITE_EXTERNAL_STORAGE>true</AUP_WRITE_EXTERNAL_STORAGE>
         <DCC_DcuOutput>.\..\..\Objects\$(Platform)\$(Config)</DCC_DcuOutput>
-        <DCC_Define>SKIA;$(DCC_Define)</DCC_Define>
+        <DCC_Define>SKIA;DELPHI_XE8_UP;DELPHI_SEATTLE_UP;$(DCC_Define)</DCC_Define>
         <DCC_ExeOutput>.\..\..\Binary\$(Platform)\$(Config)</DCC_ExeOutput>
         <DCC_Namespace>System;Xml;Data;Datasnap;Web;Soap;$(DCC_Namespace)</DCC_Namespace>
         <DCC_UnitSearchPath>$(DUnitX);$(DCC_UnitSearchPath)</DCC_UnitSearchPath>
@@ -110,7 +109,6 @@
         <Android_SplashImage960>$(BDS)\bin\Artwork\Android\FM_SplashImage_960x720.png</Android_SplashImage960>
         <BT_BuildType>Debug</BT_BuildType>
         <DCC_UsePackage>DBXSqliteDriver;RESTComponents;DBXInterBaseDriver;emsclientfiredac;DataSnapFireDAC;tethering;bindcompfmx;FmxTeeUI;FireDACIBDriver;fmx;FireDACDBXDriver;dbexpress;IndyCore;dsnap;DataSnapCommon;emsclient;FireDACCommon;RESTBackendComponents;soapserver;Skia.Package.FMX;bindengine;CloudService;FireDACCommonDriver;DataSnapClient;inet;bindcompdbx;IndyIPCommon;IndyIPServer;IndySystem;fmxFireDAC;FireDAC;FireDACSqliteDriver;ibmonitor;FMXTee;soaprtl;DbxCommonDriver;ibxpress;xmlrtl;soapmidas;DataSnapNativeClient;ibxbindings;rtl;DbxClientDriver;FireDACDSDriver;CustomIPTransport;bindcomp;IndyIPClient;Skia.Package.RTL;dbxcds;dsnapxml;DataSnapProviderClient;dbrtl;IndyProtocols;$(DCC_UsePackage)</DCC_UsePackage>
-        <EnabledSysJars>android-support-v4.dex.jar;cloud-messaging.dex.jar;com-google-android-gms.play-services-ads-base.17.2.0.dex.jar;com-google-android-gms.play-services-ads-identifier.16.0.0.dex.jar;com-google-android-gms.play-services-ads-lite.17.2.0.dex.jar;com-google-android-gms.play-services-ads.17.2.0.dex.jar;com-google-android-gms.play-services-analytics-impl.16.0.8.dex.jar;com-google-android-gms.play-services-analytics.16.0.8.dex.jar;com-google-android-gms.play-services-base.16.0.1.dex.jar;com-google-android-gms.play-services-basement.16.2.0.dex.jar;com-google-android-gms.play-services-gass.17.2.0.dex.jar;com-google-android-gms.play-services-identity.16.0.0.dex.jar;com-google-android-gms.play-services-maps.16.1.0.dex.jar;com-google-android-gms.play-services-measurement-base.16.4.0.dex.jar;com-google-android-gms.play-services-measurement-sdk-api.16.4.0.dex.jar;com-google-android-gms.play-services-stats.16.0.1.dex.jar;com-google-android-gms.play-services-tagmanager-v4-impl.16.0.8.dex.jar;com-google-android-gms.play-services-tasks.16.0.1.dex.jar;com-google-android-gms.play-services-wallet.16.0.1.dex.jar;com-google-firebase.firebase-analytics.16.4.0.dex.jar;com-google-firebase.firebase-common.16.1.0.dex.jar;com-google-firebase.firebase-iid-interop.16.0.1.dex.jar;com-google-firebase.firebase-iid.17.1.1.dex.jar;com-google-firebase.firebase-measurement-connector.17.0.1.dex.jar;com-google-firebase.firebase-messaging.17.5.0.dex.jar;fmx.dex.jar;google-play-billing.dex.jar;google-play-licensing.dex.jar</EnabledSysJars>
         <VerInfo_Build>1</VerInfo_Build>
         <VerInfo_IncludeVerInfo>true</VerInfo_IncludeVerInfo>
         <VerInfo_Keys>package=org.skia4delphi.tests.fmx;label=$(MSBuildProjectName);versionCode=1;versionName=1.0.0;persistent=False;restoreAnyVersion=False;installLocation=auto;largeHeap=False;theme=TitleBar;hardwareAccelerated=true;apiKey=</VerInfo_Keys>
@@ -133,7 +131,6 @@
         <Android_SplashImage960>$(BDS)\bin\Artwork\Android\FM_SplashImage_960x720.png</Android_SplashImage960>
         <BT_BuildType>Debug</BT_BuildType>
         <DCC_UsePackage>DBXSqliteDriver;RESTComponents;DBXInterBaseDriver;emsclientfiredac;DataSnapFireDAC;tethering;bindcompfmx;FmxTeeUI;FireDACIBDriver;fmx;FireDACDBXDriver;dbexpress;IndyCore;dsnap;DataSnapCommon;emsclient;FireDACCommon;RESTBackendComponents;soapserver;Skia.Package.FMX;bindengine;CloudService;FireDACCommonDriver;DataSnapClient;inet;bindcompdbx;IndyIPCommon;IndyIPServer;IndySystem;fmxFireDAC;FireDAC;FireDACSqliteDriver;ibmonitor;FMXTee;soaprtl;DbxCommonDriver;ibxpress;xmlrtl;soapmidas;DataSnapNativeClient;ibxbindings;rtl;DbxClientDriver;FireDACDSDriver;CustomIPTransport;bindcomp;IndyIPClient;Skia.Package.RTL;dbxcds;dsnapxml;DataSnapProviderClient;dbrtl;IndyProtocols;$(DCC_UsePackage)</DCC_UsePackage>
-        <EnabledSysJars>android-support-v4.dex.jar;cloud-messaging.dex.jar;com-google-android-gms.play-services-ads-base.17.2.0.dex.jar;com-google-android-gms.play-services-ads-identifier.16.0.0.dex.jar;com-google-android-gms.play-services-ads-lite.17.2.0.dex.jar;com-google-android-gms.play-services-ads.17.2.0.dex.jar;com-google-android-gms.play-services-analytics-impl.16.0.8.dex.jar;com-google-android-gms.play-services-analytics.16.0.8.dex.jar;com-google-android-gms.play-services-base.16.0.1.dex.jar;com-google-android-gms.play-services-basement.16.2.0.dex.jar;com-google-android-gms.play-services-gass.17.2.0.dex.jar;com-google-android-gms.play-services-identity.16.0.0.dex.jar;com-google-android-gms.play-services-maps.16.1.0.dex.jar;com-google-android-gms.play-services-measurement-base.16.4.0.dex.jar;com-google-android-gms.play-services-measurement-sdk-api.16.4.0.dex.jar;com-google-android-gms.play-services-stats.16.0.1.dex.jar;com-google-android-gms.play-services-tagmanager-v4-impl.16.0.8.dex.jar;com-google-android-gms.play-services-tasks.16.0.1.dex.jar;com-google-android-gms.play-services-wallet.16.0.1.dex.jar;com-google-firebase.firebase-analytics.16.4.0.dex.jar;com-google-firebase.firebase-common.16.1.0.dex.jar;com-google-firebase.firebase-iid-interop.16.0.1.dex.jar;com-google-firebase.firebase-iid.17.1.1.dex.jar;com-google-firebase.firebase-measurement-connector.17.0.1.dex.jar;com-google-firebase.firebase-messaging.17.5.0.dex.jar;fmx.dex.jar;google-play-billing.dex.jar;google-play-licensing.dex.jar</EnabledSysJars>
         <VerInfo_Build>1</VerInfo_Build>
         <VerInfo_IncludeVerInfo>true</VerInfo_IncludeVerInfo>
         <VerInfo_Keys>package=org.skia4delphi.tests.fmx;label=$(MSBuildProjectName);versionCode=1;versionName=1.0.0;persistent=False;restoreAnyVersion=False;installLocation=auto;largeHeap=False;theme=TitleBar;hardwareAccelerated=true;apiKey=</VerInfo_Keys>
@@ -193,24 +190,34 @@
         <DelphiCompile Include="$(MainSource)">
             <MainSource>MainSource</MainSource>
         </DelphiCompile>
+        <DCCReference Include="..\..\Source\Skia.Tests.Blender.pas"/>
         <DCCReference Include="..\..\Source\Skia.Tests.Codec.pas"/>
         <DCCReference Include="..\..\Source\Skia.Tests.ColorFilter.pas"/>
         <DCCReference Include="..\..\Source\Skia.Tests.Documents.pas"/>
         <DCCReference Include="..\..\Source\Skia.Tests.Foundation.ImageHash.pas"/>
         <DCCReference Include="..\..\Source\Skia.Tests.Foundation.pas"/>
         <DCCReference Include="..\..\Source\Skia.Tests.Foundation.Runner.pas"/>
+        <DCCReference Include="..\..\Source\Skia.Tests.Image.pas"/>
+        <DCCReference Include="..\..\Source\Skia.Tests.MaskFilter.pas"/>
         <DCCReference Include="..\..\Source\Skia.Tests.Paragraph.pas"/>
         <DCCReference Include="..\..\Source\Skia.Tests.Path.pas"/>
+        <DCCReference Include="..\..\Source\Skia.Tests.Picture.pas"/>
+        <DCCReference Include="..\..\Source\Skia.Tests.Region.pas"/>
+        <DCCReference Include="..\..\Source\Skia.Tests.RotationScaleMatrix.pas"/>
+        <DCCReference Include="..\..\Source\Skia.Tests.RoundRect.pas"/>
         <DCCReference Include="..\..\Source\Skia.Tests.RuntimeEffect.pas"/>
         <DCCReference Include="..\..\Source\Skia.Tests.Skottie.pas"/>
+        <DCCReference Include="..\..\Source\Skia.Tests.Surface.pas"/>
         <DCCReference Include="..\..\Source\Skia.Tests.Svg.pas"/>
         <DCCReference Include="..\..\Source\Skia.Tests.Unicode.pas"/>
+        <DCCReference Include="..\..\Source\FMX\Skia.Tests.FMX.Codec.pas"/>
         <DCCReference Include="..\..\Source\FMX\Skia.Tests.FMX.Runner.pas">
             <Form>frmFMXRunner</Form>
             <FormType>fmx</FormType>
         </DCCReference>
         <DCCReference Include="..\..\Source\FMX\Skia.Tests.FMX.Svg.pas"/>
         <DCCReference Include="..\..\Source\FMX\Skia.Tests.FMX.TextLayout.pas"/>
+        <DCCReference Include="..\..\Source\FMX\Skia.Tests.FMX.TImage.pas"/>
         <DCCReference Include="..\..\Source\FMX\Skia.Tests.FMX.TSkLabel.pas"/>
         <BuildConfiguration Include="Base">
             <Key>Base</Key>
@@ -312,6 +319,30 @@
                         <RemoteDir>.\</RemoteDir>
                         <Operation>0</Operation>
                         <RemoteName>sk4d.dll</RemoteName>
+                        <Overwrite>true</Overwrite>
+                    </Platform>
+                </DeployFile>
+                <DeployFile LocalName="..\..\Assets\Codec\abnt.jpg" Configuration="Debug" Class="File">
+                    <Platform Name="Android">
+                        <RemoteDir>assets\internal\Codec</RemoteDir>
+                        <RemoteName>abnt.jpg</RemoteName>
+                        <Overwrite>true</Overwrite>
+                    </Platform>
+                    <Platform Name="Android64">
+                        <RemoteDir>assets\internal\Codec</RemoteDir>
+                        <RemoteName>abnt.jpg</RemoteName>
+                        <Overwrite>true</Overwrite>
+                    </Platform>
+                </DeployFile>
+                <DeployFile LocalName="..\..\Assets\Codec\abnt.jpg" Configuration="Release" Class="File">
+                    <Platform Name="Android">
+                        <RemoteDir>assets\internal\Codec</RemoteDir>
+                        <RemoteName>abnt.jpg</RemoteName>
+                        <Overwrite>true</Overwrite>
+                    </Platform>
+                    <Platform Name="Android64">
+                        <RemoteDir>assets\internal\Codec</RemoteDir>
+                        <RemoteName>abnt.jpg</RemoteName>
                         <Overwrite>true</Overwrite>
                     </Platform>
                 </DeployFile>
@@ -675,6 +706,102 @@
                         <Overwrite>true</Overwrite>
                     </Platform>
                 </DeployFile>
+                <DeployFile LocalName="..\..\Assets\Expected.zip" Configuration="Debug" Class="File">
+                    <Platform Name="Android">
+                        <RemoteDir>assets\internal\</RemoteDir>
+                        <RemoteName>Expected.zip</RemoteName>
+                        <Overwrite>true</Overwrite>
+                    </Platform>
+                    <Platform Name="Android64">
+                        <RemoteDir>assets\internal\</RemoteDir>
+                        <RemoteName>Expected.zip</RemoteName>
+                        <Overwrite>true</Overwrite>
+                    </Platform>
+                </DeployFile>
+                <DeployFile LocalName="..\..\Assets\Expected.zip" Configuration="Release" Class="File">
+                    <Platform Name="Android">
+                        <RemoteDir>assets\internal\</RemoteDir>
+                        <RemoteName>Expected.zip</RemoteName>
+                        <Overwrite>true</Overwrite>
+                    </Platform>
+                    <Platform Name="Android64">
+                        <RemoteDir>assets\internal\</RemoteDir>
+                        <RemoteName>Expected.zip</RemoteName>
+                        <Overwrite>true</Overwrite>
+                    </Platform>
+                </DeployFile>
+                <DeployFile LocalName="..\..\Assets\Fonts\bonheur-royale-regular.ttf" Configuration="Debug" Class="File">
+                    <Platform Name="Android">
+                        <RemoteDir>assets\internal\Fonts</RemoteDir>
+                        <RemoteName>bonheur-royale-regular.ttf</RemoteName>
+                        <Overwrite>true</Overwrite>
+                    </Platform>
+                    <Platform Name="Android64">
+                        <RemoteDir>assets\internal\Fonts</RemoteDir>
+                        <RemoteName>bonheur-royale-regular.ttf</RemoteName>
+                        <Overwrite>true</Overwrite>
+                    </Platform>
+                </DeployFile>
+                <DeployFile LocalName="..\..\Assets\Fonts\bonheur-royale-regular.ttf" Configuration="Release" Class="File">
+                    <Platform Name="Android">
+                        <RemoteDir>assets\internal\Fonts</RemoteDir>
+                        <RemoteName>bonheur-royale-regular.ttf</RemoteName>
+                        <Overwrite>true</Overwrite>
+                    </Platform>
+                    <Platform Name="Android64">
+                        <RemoteDir>assets\internal\Fonts</RemoteDir>
+                        <RemoteName>bonheur-royale-regular.ttf</RemoteName>
+                        <Overwrite>true</Overwrite>
+                    </Platform>
+                </DeployFile>
+                <DeployFile LocalName="..\..\Assets\Fonts\msuighur.ttf" Configuration="Debug" Class="File">
+                    <Platform Name="Android">
+                        <RemoteDir>assets\internal\Fonts</RemoteDir>
+                        <RemoteName>msuighur.ttf</RemoteName>
+                        <Overwrite>true</Overwrite>
+                    </Platform>
+                    <Platform Name="Android64">
+                        <RemoteDir>assets\internal\Fonts</RemoteDir>
+                        <RemoteName>msuighur.ttf</RemoteName>
+                        <Overwrite>true</Overwrite>
+                    </Platform>
+                </DeployFile>
+                <DeployFile LocalName="..\..\Assets\Fonts\msuighur.ttf" Configuration="Release" Class="File">
+                    <Platform Name="Android">
+                        <RemoteDir>assets\internal\Fonts</RemoteDir>
+                        <RemoteName>msuighur.ttf</RemoteName>
+                        <Overwrite>true</Overwrite>
+                    </Platform>
+                    <Platform Name="Android64">
+                        <RemoteDir>assets\internal\Fonts</RemoteDir>
+                        <RemoteName>msuighur.ttf</RemoteName>
+                        <Overwrite>true</Overwrite>
+                    </Platform>
+                </DeployFile>
+                <DeployFile LocalName="..\..\Assets\Fonts\nunito-extrabold.ttf" Configuration="Debug" Class="File">
+                    <Platform Name="Android">
+                        <RemoteDir>assets\internal\Fonts</RemoteDir>
+                        <RemoteName>nunito-extrabold.ttf</RemoteName>
+                        <Overwrite>true</Overwrite>
+                    </Platform>
+                    <Platform Name="Android64">
+                        <RemoteDir>assets\internal\Fonts</RemoteDir>
+                        <RemoteName>nunito-extrabold.ttf</RemoteName>
+                        <Overwrite>true</Overwrite>
+                    </Platform>
+                </DeployFile>
+                <DeployFile LocalName="..\..\Assets\Fonts\nunito-extrabold.ttf" Configuration="Release" Class="File">
+                    <Platform Name="Android">
+                        <RemoteDir>assets\internal\Fonts</RemoteDir>
+                        <RemoteName>nunito-extrabold.ttf</RemoteName>
+                        <Overwrite>true</Overwrite>
+                    </Platform>
+                    <Platform Name="Android64">
+                        <RemoteDir>assets\internal\Fonts</RemoteDir>
+                        <RemoteName>nunito-extrabold.ttf</RemoteName>
+                        <Overwrite>true</Overwrite>
+                    </Platform>
+                </DeployFile>
                 <DeployFile LocalName="..\..\Assets\Fonts\segoeui.ttf" Configuration="Debug" Class="File">
                     <Platform Name="Android">
                         <RemoteDir>assets\internal\Fonts</RemoteDir>
@@ -744,6 +871,30 @@
                     <Platform Name="Android64">
                         <RemoteDir>assets\internal\Images</RemoteDir>
                         <RemoteName>horse.webp</RemoteName>
+                        <Overwrite>true</Overwrite>
+                    </Platform>
+                </DeployFile>
+                <DeployFile LocalName="..\..\Assets\Images\icons.png" Configuration="Debug" Class="File">
+                    <Platform Name="Android">
+                        <RemoteDir>assets\internal\Images</RemoteDir>
+                        <RemoteName>icons.png</RemoteName>
+                        <Overwrite>true</Overwrite>
+                    </Platform>
+                    <Platform Name="Android64">
+                        <RemoteDir>assets\internal\Images</RemoteDir>
+                        <RemoteName>icons.png</RemoteName>
+                        <Overwrite>true</Overwrite>
+                    </Platform>
+                </DeployFile>
+                <DeployFile LocalName="..\..\Assets\Images\icons.png" Configuration="Release" Class="File">
+                    <Platform Name="Android">
+                        <RemoteDir>assets\internal\Images</RemoteDir>
+                        <RemoteName>icons.png</RemoteName>
+                        <Overwrite>true</Overwrite>
+                    </Platform>
+                    <Platform Name="Android64">
+                        <RemoteDir>assets\internal\Images</RemoteDir>
+                        <RemoteName>icons.png</RemoteName>
                         <Overwrite>true</Overwrite>
                     </Platform>
                 </DeployFile>
@@ -1059,6 +1210,30 @@
                         <Overwrite>true</Overwrite>
                     </Platform>
                 </DeployFile>
+                <DeployFile LocalName="..\..\Assets\Picture\simple-picture.skp" Configuration="Debug" Class="File">
+                    <Platform Name="Android">
+                        <RemoteDir>assets\internal\Picture</RemoteDir>
+                        <RemoteName>simple-picture.skp</RemoteName>
+                        <Overwrite>true</Overwrite>
+                    </Platform>
+                    <Platform Name="Android64">
+                        <RemoteDir>assets\internal\Picture</RemoteDir>
+                        <RemoteName>simple-picture.skp</RemoteName>
+                        <Overwrite>true</Overwrite>
+                    </Platform>
+                </DeployFile>
+                <DeployFile LocalName="..\..\Assets\Picture\simple-picture.skp" Configuration="Release" Class="File">
+                    <Platform Name="Android">
+                        <RemoteDir>assets\internal\Picture</RemoteDir>
+                        <RemoteName>simple-picture.skp</RemoteName>
+                        <Overwrite>true</Overwrite>
+                    </Platform>
+                    <Platform Name="Android64">
+                        <RemoteDir>assets\internal\Picture</RemoteDir>
+                        <RemoteName>simple-picture.skp</RemoteName>
+                        <Overwrite>true</Overwrite>
+                    </Platform>
+                </DeployFile>
                 <DeployFile LocalName="..\..\Assets\RuntimeEffect\shader.brightness-and-contrast.sksl" Configuration="Debug" Class="File">
                     <Platform Name="Android">
                         <RemoteDir>assets\internal\RuntimeEffect</RemoteDir>
@@ -1152,6 +1327,30 @@
                     <Platform Name="Android64">
                         <RemoteDir>assets\internal\Skottie</RemoteDir>
                         <RemoteName>rocket.json</RemoteName>
+                        <Overwrite>true</Overwrite>
+                    </Platform>
+                </DeployFile>
+                <DeployFile LocalName="..\..\Assets\Svg\3d-shapes.svg" Configuration="Debug" Class="File">
+                    <Platform Name="Android">
+                        <RemoteDir>assets\internal\Svg</RemoteDir>
+                        <RemoteName>3d-shapes.svg</RemoteName>
+                        <Overwrite>true</Overwrite>
+                    </Platform>
+                    <Platform Name="Android64">
+                        <RemoteDir>assets\internal\Svg</RemoteDir>
+                        <RemoteName>3d-shapes.svg</RemoteName>
+                        <Overwrite>true</Overwrite>
+                    </Platform>
+                </DeployFile>
+                <DeployFile LocalName="..\..\Assets\Svg\3d-shapes.svg" Configuration="Release" Class="File">
+                    <Platform Name="Android">
+                        <RemoteDir>assets\internal\Svg</RemoteDir>
+                        <RemoteName>3d-shapes.svg</RemoteName>
+                        <Overwrite>true</Overwrite>
+                    </Platform>
+                    <Platform Name="Android64">
+                        <RemoteDir>assets\internal\Svg</RemoteDir>
+                        <RemoteName>3d-shapes.svg</RemoteName>
                         <Overwrite>true</Overwrite>
                     </Platform>
                 </DeployFile>

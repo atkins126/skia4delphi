@@ -1,8 +1,7 @@
 ﻿<!--
- Copyright (c) 2011-2022 Google LLC.
- Copyright (c) 2021-2022 Skia4Delphi Project.
+ Copyright (c) 2021-2023 Skia4Delphi Project.
 
- Use of this source code is governed by a BSD-style license that can be
+ Use of this source code is governed by the MIT license that can be
  found in the LICENSE file.
 -->
 <Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
@@ -44,12 +43,12 @@
     <PropertyGroup Condition="'$(Base)'!=''">
         <SanitizedProjectName>Skia_Package_FMX_Designtime</SanitizedProjectName>
         <DCC_BplOutput>..\..\Library\RAD Studio XE7\$(Platform)\$(Config)\Bpl</DCC_BplOutput>
-        <DCC_CBuilderOutput>All</DCC_CBuilderOutput>
         <DCC_DcpOutput>..\..\Library\RAD Studio XE7\$(Platform)\$(Config)</DCC_DcpOutput>
         <DCC_DcuOutput>..\..\Library\RAD Studio XE7\$(Platform)\$(Config)</DCC_DcuOutput>
         <DCC_Description>Skia4Delphi FMX Designtime package</DCC_Description>
         <DCC_ExeOutput>.\$(Platform)\$(Config)</DCC_ExeOutput>
         <DCC_Namespace>System;Xml;Data;Datasnap;Web;Soap;$(DCC_Namespace)</DCC_Namespace>
+        <DCC_OutputNeverBuildDcps>true</DCC_OutputNeverBuildDcps>
         <DCC_UnitSearchPath>..\..\Library\RAD Studio XE7\$(Platform)\$(Config);..\..\Source;..\..\Source\FMX;$(DCC_UnitSearchPath)</DCC_UnitSearchPath>
         <DesignOnlyPackage>true</DesignOnlyPackage>
         <DllSuffix>210</DllSuffix>
@@ -92,15 +91,15 @@
         <DCCReference Include="designide.dcp"/>
         <DCCReference Include="Skia.Package.RTL.dcp"/>
         <DCCReference Include="Skia.Package.FMX.dcp"/>
-        <DCCReference Include="..\..\Source\FMX\Designtime\Skia.FMX.Designtime.Editor.AnimatedImage.pas">
+        <DCCReference Include="..\..\Source\FMX\Designtime\FMX.Skia.Designtime.Editor.AnimatedImage.pas">
             <Form>SkAnimatedImageEditorForm</Form>
             <FormType>fmx</FormType>
         </DCCReference>
-        <DCCReference Include="..\..\Source\FMX\Designtime\Skia.FMX.Designtime.Editor.SVG.pas">
+        <DCCReference Include="..\..\Source\FMX\Designtime\FMX.Skia.Designtime.Editor.SVG.pas">
             <Form>SkSvgEditorForm</Form>
             <FormType>fmx</FormType>
         </DCCReference>
-        <DCCReference Include="..\..\Source\FMX\Designtime\Skia.FMX.Designtime.pas"/>
+        <DCCReference Include="..\..\Source\FMX\Designtime\FMX.Skia.Designtime.pas"/>
         <BuildConfiguration Include="Base">
             <Key>Base</Key>
         </BuildConfiguration>

@@ -2,10 +2,9 @@
 {                                                                        }
 {                              Skia4Delphi                               }
 {                                                                        }
-{ Copyright (c) 2011-2022 Google LLC.                                    }
-{ Copyright (c) 2021-2022 Skia4Delphi Project.                           }
+{ Copyright (c) 2021-2023 Skia4Delphi Project.                           }
 {                                                                        }
-{ Use of this source code is governed by a BSD-style license that can be }
+{ Use of this source code is governed by the MIT license that can be     }
 { found in the LICENSE file.                                             }
 {                                                                        }
 {************************************************************************}
@@ -19,9 +18,10 @@ uses
   { Delphi }
   System.SysUtils, System.Types, System.Classes, FMX.Types, FMX.Controls,
   FMX.Forms, FMX.StdCtrls, FMX.Layouts, FMX.Objects, System.IOUtils,
+  FMX.Controls.Presentation,
 
   { Skia }
-  Skia, Skia.FMX,
+  System.Skia, FMX.Skia,
 
   { Sample }
   Sample.Form.Base;
@@ -56,16 +56,19 @@ uses
 procedure TfrmRuntimeEffects.btnShaderAnimationClick(Sender: TObject);
 var
   LEffect: ISkRuntimeEffect;
-  LPaint: ISkPaint;
+  LEffectBuilder: ISkRuntimeShaderBuilder;
 begin
   LEffect := TSkRuntimeEffect.MakeForShader(TFile.ReadAllText(AssetsPath + TPath.Combine('RuntimeEffects Shaders', 'rainbow-twister.sksl')));
-  LPaint := TSkPaint.Create;
-  LPaint.Shader := LEffect.MakeShader(True);
+  LEffectBuilder := TSkRuntimeShaderBuilder.Create(LEffect);
   ChildForm<TfrmAnimatedPaintBoxViewer>.Show('Shader Animation', 'Shader that varies with time (iTime uniform)',
     procedure (const ACanvas: ISkCanvas; const ADest: TRectF; const ASeconds: Double)
+    var
+      LPaint: ISkPaint;
     begin
-      LEffect.SetUniform('iResolution', PointF(ADest.Width, ADest.Height));
-      LEffect.SetUniform('iTime', ASeconds);
+      LEffectBuilder.SetUniform('iResolution', PointF(ADest.Width, ADest.Height));
+      LEffectBuilder.SetUniform('iTime', ASeconds);
+      LPaint := TSkPaint.Create;
+      LPaint.Shader := LEffectBuilder.MakeShader;
       ACanvas.DrawPaint(LPaint);
     end);
 end;
@@ -73,22 +76,25 @@ end;
 procedure TfrmRuntimeEffects.btnShaderWithMouseClick(Sender: TObject);
 var
   LEffect: ISkRuntimeEffect;
-  LPaint: ISkPaint;
+  LEffectBuilder: ISkRuntimeShaderBuilder;
 begin
   LEffect := TSkRuntimeEffect.MakeForShader(TFile.ReadAllText(AssetsPath + TPath.Combine('RuntimeEffects Shaders', 'mouse.sksl')));
-  LPaint := TSkPaint.Create;
-  LPaint.Shader := LEffect.MakeShader(True);
+  LEffectBuilder := TSkRuntimeShaderBuilder.Create(LEffect);
 
   ChildForm<TfrmAnimatedPaintBoxViewer>.OnMouseMove :=
     procedure (const AX, AY: Single)
     begin
-      LEffect.SetUniform('iMouse', PointF(AX, AY));
+      LEffectBuilder.SetUniform('iMouse', PointF(AX, AY));
     end;
 
   ChildForm<TfrmAnimatedPaintBoxViewer>.Show('Shader with Mouse', 'Shader that varies with mouse position (iMouse uniform)',
     procedure (const ACanvas: ISkCanvas; const ADest: TRectF; const ASeconds: Double)
+    var
+      LPaint: ISkPaint;
     begin
-      LEffect.SetUniform('iResolution', PointF(ADest.Width, ADest.Height));
+      LEffectBuilder.SetUniform('iResolution', PointF(ADest.Width, ADest.Height));
+      LPaint := TSkPaint.Create;
+      LPaint.Shader := LEffectBuilder.MakeShader;
       ACanvas.DrawPaint(LPaint);
     end);
 end;
@@ -96,16 +102,19 @@ end;
 procedure TfrmRuntimeEffects.btnWavesShaderAnimationClick(Sender: TObject);
 var
   LEffect: ISkRuntimeEffect;
-  LPaint: ISkPaint;
+  LEffectBuilder: ISkRuntimeShaderBuilder;
 begin
   LEffect := TSkRuntimeEffect.MakeForShader(TFile.ReadAllText(AssetsPath + TPath.Combine('RuntimeEffects Shaders', 'waves.sksl')));
-  LPaint := TSkPaint.Create;
-  LPaint.Shader := LEffect.MakeShader(True);
-  ChildForm<TfrmAnimatedPaintBoxViewer>.Show('Waves Shade Animation', 'Shader that varies with time (iTime uniform)',
+  LEffectBuilder := TSkRuntimeShaderBuilder.Create(LEffect);
+  ChildForm<TfrmAnimatedPaintBoxViewer>.Show('Waves Shader Animation', 'Shader that varies with time (iTime uniform)',
     procedure (const ACanvas: ISkCanvas; const ADest: TRectF; const ASeconds: Double)
+    var
+      LPaint: ISkPaint;
     begin
-      LEffect.SetUniform('iResolution', PointF(ADest.Width, ADest.Height));
-      LEffect.SetUniform('iTime', ASeconds);
+      LEffectBuilder.SetUniform('iResolution', PointF(ADest.Width, ADest.Height));
+      LEffectBuilder.SetUniform('iTime', ASeconds);
+      LPaint := TSkPaint.Create;
+      LPaint.Shader := LEffectBuilder.MakeShader;
       ACanvas.DrawPaint(LPaint);
     end);
 end;

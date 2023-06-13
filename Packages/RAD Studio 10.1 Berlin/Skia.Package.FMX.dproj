@@ -1,8 +1,7 @@
 ﻿<!--
- Copyright (c) 2011-2022 Google LLC.
- Copyright (c) 2021-2022 Skia4Delphi Project.
+ Copyright (c) 2021-2023 Skia4Delphi Project.
 
- Use of this source code is governed by a BSD-style license that can be
+ Use of this source code is governed by the MIT license that can be
  found in the LICENSE file.
 -->
 <Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
@@ -49,16 +48,18 @@
     <PropertyGroup Condition="'$(Base)'!=''">
         <SanitizedProjectName>Skia_Package_FMX</SanitizedProjectName>
         <DCC_BplOutput>..\..\Library\RAD Studio 10.1 Berlin\$(Platform)\$(Config)\Bpl</DCC_BplOutput>
-        <DCC_CBuilderOutput>All</DCC_CBuilderOutput>
+        <DCC_HppOutput>..\..\Library\RAD Studio 10.1 Berlin\$(Platform)\Include</DCC_HppOutput>
         <DCC_DcpOutput>..\..\Library\RAD Studio 10.1 Berlin\$(Platform)\$(Config)</DCC_DcpOutput>
         <DCC_DcuOutput>..\..\Library\RAD Studio 10.1 Berlin\$(Platform)\$(Config)</DCC_DcuOutput>
         <DCC_Description>Skia4Delphi FMX package</DCC_Description>
         <DCC_ExeOutput>.\$(Platform)\$(Config)</DCC_ExeOutput>
         <DCC_Namespace>System;Xml;Data;Datasnap;Web;Soap;$(DCC_Namespace)</DCC_Namespace>
+        <DCC_OutputNeverBuildDcps>true</DCC_OutputNeverBuildDcps>
         <DCC_UnitSearchPath>..\..\Library\RAD Studio 10.1 Berlin\$(Platform)\$(Config);..\..\Source;$(DCC_UnitSearchPath)</DCC_UnitSearchPath>
         <DllSuffix>240</DllSuffix>
         <GenDll>true</GenDll>
         <GenPackage>true</GenPackage>
+        <RuntimeOnlyPackage>true</RuntimeOnlyPackage>
         <VerInfo_Keys>CompanyName=;FileDescription=$(MSBuildProjectName);FileVersion=1.0.0.0;InternalName=;LegalCopyright=;LegalTrademarks=;OriginalFilename=;ProgramID=com.embarcadero.$(MSBuildProjectName);ProductName=$(MSBuildProjectName);ProductVersion=1.0.0.0;Comments=</VerInfo_Keys>
         <VerInfo_Locale>1033</VerInfo_Locale>
     </PropertyGroup>
@@ -102,10 +103,10 @@
         <DCCReference Include="rtl.dcp"/>
         <DCCReference Include="fmx.dcp"/>
         <DCCReference Include="Skia.Package.RTL.dcp"/>
-        <DCCReference Include="..\..\Source\FMX\Skia.FMX.Canvas.GL.pas"/>
-        <DCCReference Include="..\..\Source\FMX\Skia.FMX.Canvas.Metal.pas"/>
-        <DCCReference Include="..\..\Source\FMX\Skia.FMX.Graphics.pas"/>
-        <DCCReference Include="..\..\Source\FMX\Skia.FMX.pas"/>
+        <DCCReference Include="..\..\Source\FMX\FMX.Skia.Canvas.GL.pas"/>
+        <DCCReference Include="..\..\Source\FMX\FMX.Skia.Canvas.Metal.pas"/>
+        <DCCReference Include="..\..\Source\FMX\FMX.Skia.Canvas.pas"/>
+        <DCCReference Include="..\..\Source\FMX\FMX.Skia.pas"/>
         <BuildConfiguration Include="Base">
             <Key>Base</Key>
         </BuildConfiguration>

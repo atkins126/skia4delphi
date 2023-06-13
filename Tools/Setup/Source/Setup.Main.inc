@@ -6,10 +6,9 @@
 {                                                                        }
 {                              Skia4Delphi                               }
 {                                                                        }
-{ Copyright (c) 2011-2022 Google LLC.                                    }
-{ Copyright (c) 2021-2022 Skia4Delphi Project.                           }
+{ Copyright (c) 2021-2023 Skia4Delphi Project.                           }
 {                                                                        }
-{ Use of this source code is governed by a BSD-style license that can be }
+{ Use of this source code is governed by the MIT license that can be     }
 { found in the LICENSE file.                                             }
 {                                                                        }
 {************************************************************************}
@@ -55,6 +54,8 @@ function UninstallPackages(const ARADStudioInfos: TRADStudioInfos; const AGroupP
 
 var
   FGroupProjects: TRADStudioGroupProjects;
+  FMaxVersionInGroupProjects: TRADStudioVersion;
+  FOnBeforeProjectBuild: TBeforeProjectBuildProc;
   FOnGetBuildCustonParam: TGetBuildCustonParamEvent;
   FOnTryExtractPreBuildObjects: TTryExtractPreBuildObjectsProc;
   FOnTryPrepareProjectInstallation: TTryPrepareProjectInstallationEvent;
@@ -63,8 +64,10 @@ var
 
 // implementation
 
+/// <summary> Make project files (dproj, dpr, groupproj) for unofficial versions supported </summary>
+procedure _MakeProjectsForUnofficialVersionsSupported(var AGroupProjects: TRADStudioGroupProjects; const ARADStudioInfos: TRADStudioInfos; const AMaxVersionOfficiallySupported: TRADStudioVersion); forward;
 /// <summary> Check if needs directory page by checking the define FilesEmbedded </summary>
-function _NeedsDirPage: Boolean; forward; 
+function _NeedsDirPage: Boolean; forward;
 
 procedure CurStepChanged(ACurStep: TSetupStep);
 var
@@ -91,7 +94,7 @@ begin
             end;
             if not TryUninstallCurrentVersion then
             begin
-              TryShowErrorFmt(CustomMessage('SetupMainCannotPossibleToUninstallDetectedVersion'), ['{#LibraryName}']);
+              TryShowErrorFmt(CustomMessage('SetupMainCouldNotUninstallDetectedVersion'), ['{#LibraryName}']);
               Abort;
             end;
           end;
@@ -101,16 +104,19 @@ begin
         WizardForm.StatusLabel.Caption := CustomMessage('SetupMainUninstallingPackages');
         if not UninstallPackages(LSelectedRADStudioVersions, FGroupProjects) then
         begin
-          TryShowError(CustomMessage('SetupMainCannotPossibleToUninstallPackages'));
+          TryShowError(CustomMessage('SetupMainCouldNotUninstallPackages'));
           Abort;
         end;
       end;
     ssPostInstall:
-      begin                   
+      begin
         LSelectedRADStudioVersions := GetSelectedRADStudioVersions;
         if GetArrayLength(LSelectedRADStudioVersions) <> 0 then
         begin
           Log('Start installation post extraction files...');
+          #ifdef FilesEmbedded
+          CopyDirectory(ExpandConstant('{tmp}\') +'{app}\{#LibraryPackagesFolder}', ExpandConstant('{app}\') + '{#LibraryPackagesFolder}', False);
+          #endif
           if not InstallPackages(GetSelectedRADStudioVersions, FGroupProjects) then
             Abort;
           if HaveRADStudioInstanceRunning and not IsSilent then
@@ -130,7 +136,7 @@ begin
         SetAbsolutePathsInRADStudioGroupProjects(ExpandConstant('{app}'), FGroupProjects);
         if not UninstallPackages(FRADStudioInfos, FGroupProjects) then
         begin
-          TryShowError(CustomMessage('SetupMainCannotPossibleToUninstallPackages'));
+          TryShowError(CustomMessage('SetupMainCouldNotUninstallPackages'));
           Abort;
         end;
       end;
@@ -167,9 +173,12 @@ begin
   Result := TryGetRADStudioGroupProjectsFromPath(LPackagesPath, FGroupProjects);
   if Result then
   begin
-    FRADStudioInfos := GetRADStudioInfosOfGroupProjects(FGroupProjects);
+    FRADStudioInfos := GetRADStudioInfosSupportedByGroupProjects(FGroupProjects);
+    TryGetMaxRADStudioVersionInGroupProjects(FGroupProjects, FMaxVersionInGroupProjects);
     Result := GetArrayLength(FRADStudioInfos) > 0;
-    if not Result then
+    if Result then
+      _MakeProjectsForUnofficialVersionsSupported(FGroupProjects, FRADStudioInfos, FMaxVersionInGroupProjects)
+    else
       TryShowError(CustomMessage('SetupMainErrorNoRADStudioVersionAvailable'));
   end
   else
@@ -187,7 +196,10 @@ begin
   end;
   Result := TryGetRADStudioGroupProjectsFromPath(AddBackslash(CombinePath(ExpandConstant('{app}'), '{#LibraryPackagesFolder}')), FGroupProjects);
   if Result then
-    FRADStudioInfos := GetRADStudioInfosOfGroupProjects(FGroupProjects)
+  begin
+    FRADStudioInfos := GetRADStudioInfosSupportedByGroupProjects(FGroupProjects);
+    TryGetMaxRADStudioVersionInGroupProjects(FGroupProjects, FMaxVersionInGroupProjects);
+  end
   else
     TryShowError(CustomMessage('SetupMainErrorFailedToGetGroupProjects'));
 end;
@@ -195,7 +207,7 @@ end;
 // Create wizard custom pages
 procedure InitializeWizard;
 begin
-  CreateRADStudioVersionsChoicePage(wpWelcome, FRADStudioInfos);
+  CreateRADStudioVersionsChoicePage(wpWelcome, FRADStudioInfos, FMaxVersionInGroupProjects);
   WizardForm.LicenseAcceptedRadio.Checked := True;
 end;
 
@@ -218,13 +230,13 @@ begin
     LCustomParam := FOnGetBuildCustonParam()
   else
     LCustomParam := '';
-  Result := TryBuildRADStudioPackages(ARADStudioInfos, AGroupProjects, LCustomParam, FOnTryExtractPreBuildObjects);
+  Result := TryBuildRADStudioPackages(ARADStudioInfos, AGroupProjects, LCustomParam, FOnBeforeProjectBuild, FOnTryExtractPreBuildObjects);
   if Result then
   begin
     WizardForm.StatusLabel.Caption := CustomMessage('SetupMainInstallingPackages');
     try
       for I := 0 to GetArrayLength(ARADStudioInfos) - 1 do
-      begin    
+      begin
         LInfo := ARADStudioInfos[I];
         if LInfo.Status in [riNotFound, riNeedOpenFirst] then
           Continue;
@@ -236,32 +248,40 @@ begin
             LProject := AGroupProjects[J].Items[K].Project;
             if TryGetRADStudioVersionOfProject(LProject, LVersion) and (CompareRADStudioVersions(LVersion, LInfo.Version) = 0) then
             begin
-              Log(Format('Setup.Main.InstallPackages: Starting installation of package "%s"...', [AGroupProjects[J].Items[K].Project.FileName]));
+              LVersion := LInfo.Version;
+              Log(Format('Setup.Main.InstallPackages: Starting installation of package "%s" in "%s"...', [LProject.FileName, LVersion.Name]));
+
               if (FOnTryPrepareProjectInstallation <> nil) and
                 not FOnTryPrepareProjectInstallation(AGroupProjects[J].Items[K], LInfo) then
-              begin      
+              begin
                 TryShowErrorFmt(CustomMessage('SetupMainFailedToInstallPackage'), [ExtractFileName(LProject.FileName), LVersion.Name, '1']);
                 Result := False;
                 Exit;
               end;
               LProject := AGroupProjects[J].Items[K].Project;
 
+              // Getting Bpl filename
+              if not TryGetRADStudioProjectBplOutputFileName(LProject, LBplFileName) then
+              begin
+                TryShowErrorFmt(CustomMessage('SetupMainCouldNotDetectProjectBplOutputFileName'), [ExtractFileName(LProject.FileName), LVersion.Name]);
+                Result := False;
+                Exit;
+              end;
+              if (not LProject.IsDesignOnly) and (pfWin64 in LProject.Platforms) and (GetRADStudioCommonBplDir(LInfo, pfWin64) <> '') then
+                CopyFileToDir(ExpandProjectPath(LBplFileName, LVersion.BuildConfig, pfWin64), GetRADStudioCommonBplDir(LInfo, pfWin64));
+              LBplFileName := ExpandProjectPath(LBplFileName, LVersion.BuildConfig, pfWin32);
+              if not FileExists(LBplFileName) then
+              begin
+                TryShowErrorFmt(CustomMessage('SetupMainFailedToInstallPackage'), [ExtractFileName(LProject.FileName), LVersion.Name, '2']);
+                Result := False;
+                Exit;
+              end;
+              if (not LProject.IsDesignOnly) and (GetRADStudioCommonBplDir(LInfo, pfWin32) <> '') then
+                CopyFileToDir(LBplFileName, GetRADStudioCommonBplDir(LInfo, pfWin32));
+
               // Registering Bpl
               if LProject.IsInstallable then
               begin
-                if not TryGetRADStudioProjectBplOutputFileName(LProject, LBplFileName) then
-                begin
-                  TryShowErrorFmt(CustomMessage('SetupMainCannotPossibleDetectProjectBplOutputFileName'), [ExtractFileName(LProject.FileName), LVersion.Name]);
-                  Result := False;
-                  Exit;
-                end;
-                LBplFileName := ExpandProjectPath(LBplFileName, pcRelease, pfWin32);
-                if not FileExists(LBplFileName) then
-                begin
-                  TryShowErrorFmt(CustomMessage('SetupMainFailedToInstallPackage'), [ExtractFileName(LProject.FileName), LVersion.Name, '2']);
-                  Result := False;
-                  Exit;
-                end;
                 if not TryRegisterRADStudioBpl(LVersion, LBplFileName, LProject.Description) then
                 begin
                   TryShowErrorFmt(CustomMessage('SetupMainFailedToInstallPackage'), [ExtractFileName(LProject.FileName), LVersion.Name, '3']);
@@ -292,14 +312,14 @@ begin
                 end;
                 if (LPlatform in GetPlatformsAllowedToBuild(LInfo)) then
                 begin
-                  LDcpFileName := ExpandProjectPath(GetRADStudioProjectDcpOutputFileName(LProject), pcRelease, LPlatform);
+                  LDcpFileName := ExpandProjectPath(GetRADStudioProjectDcpOutputFileName(LProject), LVersion.BuildConfig, LPlatform);
                   if not FileExists(LDcpFileName) then
                   begin
                     TryShowErrorFmt(CustomMessage('SetupMainFailedToInstallPackage'), [ExtractFileName(LProject.FileName), LVersion.Name + ' - ' + GetProjectPlatformName(LPlatform), '6']);
                     Result := False;
                     Exit;
                   end;
-                  if not TryAddRADStudioLibrarySearchPath(LVersion, LPlatform, ExpandProjectPath(LProject.DCUOutputPath, pcRelease, LPlatform)) then
+                  if not TryAddRADStudioLibrarySearchPath(LVersion, LPlatform, ExpandProjectPath(LProject.DCUOutputPath, LVersion.BuildConfig, LPlatform)) then
                   begin
                     TryShowErrorFmt(CustomMessage('SetupMainFailedToInstallPackage'), [ExtractFileName(LProject.FileName), LVersion.Name + ' - ' + GetProjectPlatformName(LPlatform), '7']);
                     Result := False;
@@ -321,6 +341,53 @@ begin
     end;
   end;
   WizardForm.ProgressGauge.Position := WizardForm.ProgressGauge.Max;
+end;
+
+procedure _MakeProjectsForUnofficialVersionsSupported(var AGroupProjects: TRADStudioGroupProjects;
+  const ARADStudioInfos: TRADStudioInfos; const AMaxVersionOfficiallySupported: TRADStudioVersion);
+var
+  I, J, K, L, M: Integer;
+  LNewGroupProject: TRADStudioGroupProject;
+  LNewPath: string;
+  LFiles: TArrayOfString;
+begin
+  for I := 0 to GetArrayLength(ARADStudioInfos) - 1 do
+  begin
+    if CompareRADStudioVersions(ARADStudioInfos[I].Version, AMaxVersionOfficiallySupported) > 0 then
+    begin
+      for J := 0 to GetArrayLength(AGroupProjects) - 1 do
+      begin
+        if ContainsString(SplitString(AGroupProjects[J].FileName, '\'), AMaxVersionOfficiallySupported.Name, False) then
+        begin
+          LNewPath := ExtractFilePath(ReplaceFolderNameInPath(AGroupProjects[J].FileName, AMaxVersionOfficiallySupported.Name, ARADStudioInfos[I].Version.Name, False));
+          if CopyDirectory(ExtractFilePath(AGroupProjects[J].FileName), LNewPath, True) then
+          begin
+            LFiles := GetFiles(LNewPath, '*', soAllDirectories);
+            for K := 0 to GetArrayLength(LFiles) - 1 do
+              ReplaceStringInFile(LFiles[K], AMaxVersionOfficiallySupported.Name, ARADStudioInfos[I].Version.Name, False);
+            LNewGroupProject := CopyRADStudioGroupProject(AGroupProjects[J]);
+            LNewGroupProject.FileName := ReplaceFolderNameInPath(LNewGroupProject.FileName, AMaxVersionOfficiallySupported.Name, ARADStudioInfos[I].Version.Name, False);
+            for L := 0 to GetArrayLength(LNewGroupProject.Items) - 1 do
+            begin
+              LNewGroupProject.Items[L].Project.ProjectVersion := ARADStudioInfos[I].Version.MaxDprojVersion;
+              LNewGroupProject.Items[L].Project.FileName := ReplaceFolderNameInPath(LNewGroupProject.Items[L].Project.FileName, AMaxVersionOfficiallySupported.Name, ARADStudioInfos[I].Version.Name, False);
+              LNewGroupProject.Items[L].Project.BplOutputPath := ReplaceFolderNameInPath(LNewGroupProject.Items[L].Project.BplOutputPath, AMaxVersionOfficiallySupported.Name, ARADStudioInfos[I].Version.Name, False);
+              LNewGroupProject.Items[L].Project.DcpOutputPath := ReplaceFolderNameInPath(LNewGroupProject.Items[L].Project.DcpOutputPath, AMaxVersionOfficiallySupported.Name, ARADStudioInfos[I].Version.Name, False);
+              LNewGroupProject.Items[L].Project.DCUOutputPath := ReplaceFolderNameInPath(LNewGroupProject.Items[L].Project.DCUOutputPath, AMaxVersionOfficiallySupported.Name, ARADStudioInfos[I].Version.Name, False);
+              for M := 0 to GetArrayLength(LNewGroupProject.Items[L].Project.SourcePaths) - 1 do
+                LNewGroupProject.Items[L].Project.SourcePaths[M] := ReplaceFolderNameInPath(LNewGroupProject.Items[L].Project.SourcePaths[M], AMaxVersionOfficiallySupported.Name, ARADStudioInfos[I].Version.Name, False);
+            end;
+            SetArrayLength(AGroupProjects, GetArrayLength(AGroupProjects) + 1);
+            AGroupProjects[GetArrayLength(AGroupProjects) - 1] := LNewGroupProject;
+          end;
+        end;
+      end;
+    end;
+  end;
+
+  for I := 0 to GetArrayLength(AGroupProjects) - 1 do
+    for J := 0 to GetArrayLength(AGroupProjects[I].Items) - 1 do
+      Log(Format('_MakeProjectsForUnofficialVersionsSupported: f "%s" g "%s"...', [AGroupProjects[I].Items[J].Project.FileName, AGroupProjects[I].FileName]));
 end;
 
 function _NeedsDirPage: Boolean;
@@ -349,17 +416,19 @@ end;
 function UninstallPackages(const ARADStudioInfos: TRADStudioInfos; const AGroupProjects: TRADStudioGroupProjects): Boolean;
 var
   I, J, K, L: Integer;
+  LBplFileName: string;
+  LConfig: TProjectConfig;
+  LFileName: string;
   LInfo: TRADStudioInfo;
   LProject: TRADStudioProject;
   LVersion: TRADStudioVersion;
-  LBplFileName: string;
   LPlatform: TProjectPlatform;
 begin
   Result := True;
   Log('Setup.Main.UninstallPackages: Starting...');
   for I := 0 to GetArrayLength(ARADStudioInfos) - 1 do
   begin
-    LInfo := ARADStudioInfos[I]; 
+    LInfo := ARADStudioInfos[I];
     if LInfo.Status in [riNotFound, riNeedOpenFirst] then
       Continue;
     for J := 0 to GetArrayLength(AGroupProjects) - 1 do
@@ -369,24 +438,34 @@ begin
         LProject := AGroupProjects[J].Items[K].Project;
         if TryGetRADStudioVersionOfProject(LProject, LVersion) and (CompareRADStudioVersions(LVersion, LInfo.Version) = 0) then
         begin
+          LVersion := LInfo.Version;
+          Log(Format('Setup.Main.UninstallPackages: Starting uninstallation of package "%s" in "%s"...', [LProject.FileName, LVersion.Name]));
+
           // Unregistering Bpl
           if TryGetRADStudioProjectBplOutputFileName(LProject, LBplFileName) then
           begin
-            LBplFileName := ExpandProjectPath(LBplFileName, pcRelease, pfWin32);
-            if not TryUnregisterRADStudioBpl(LVersion, LBplFileName) then
+            if GetRADStudioCommonBplDir(LInfo, pfWin32) <> '' then
+              DeleteFile(CombinePath(GetRADStudioCommonBplDir(LInfo, pfWin32), ExtractFileName(LBplFileName)));
+            if GetRADStudioCommonBplDir(LInfo, pfWin64) <> '' then
+              DeleteFile(CombinePath(GetRADStudioCommonBplDir(LInfo, pfWin64), ExtractFileName(LBplFileName)));
+            for LConfig := LowProjectConfig to HighProjectConfig do
             begin
-              Log(FmtMessage(CustomMessage('SetupMainFailedToUninstallPackage'), [ExtractFileName(LProject.FileName), LVersion.Name, '1']));
-              Result := False;
-            end; 
-            if not TryRemoveRADStudioPathEnvVariable(LVersion, RemoveBackslash(ExtractFilePath(LBplFileName))) then
-            begin
-              Log(FmtMessage(CustomMessage('SetupMainFailedToUninstallPackage'), [ExtractFileName(LProject.FileName), LVersion.Name, '2']));
-              Result := False;
+              LFileName := ExpandProjectPath(LBplFileName, LConfig, pfWin32);
+              if not TryUnregisterRADStudioBpl(LVersion, LFileName) then
+              begin
+                Log(FmtMessage(CustomMessage('SetupMainFailedToUninstallPackage'), [ExtractFileName(LProject.FileName), LVersion.Name, '1']));
+                Result := False;
+              end;
+              if not TryRemoveRADStudioPathEnvVariable(LVersion, RemoveBackslash(ExtractFilePath(LFileName))) then
+              begin
+                Log(FmtMessage(CustomMessage('SetupMainFailedToUninstallPackage'), [ExtractFileName(LProject.FileName), LVersion.Name, '2']));
+                Result := False;
+              end;
             end;
           end
           else
           begin
-            Log(FmtMessage(CustomMessage('SetupMainCannotPossibleDetectProjectBplOutputFileName'), [ExtractFileName(LProject.FileName), LVersion.Name]));
+            Log(FmtMessage(CustomMessage('SetupMainCouldNotDetectProjectBplOutputFileName'), [ExtractFileName(LProject.FileName), LVersion.Name]));
             Result := False;
           end;
 
@@ -397,15 +476,19 @@ begin
           end;
           LProject := AGroupProjects[J].Items[K].Project;
             
-          // Adding search paths
+          // Removing search paths
           for LPlatform := LowProjectPlatform to HighProjectPlatform do
-          begin   
+          begin
             if (not (LPlatform in LProject.Platforms)) or (not CheckIfRADStudioSupportsPlatform(LInfo, LPlatform)) then
               Continue;
-            if (LPlatform in GetPlatformsAllowedToBuild(LInfo)) and not TryRemoveRADStudioLibrarySearchPath(LVersion, LPlatform, ExpandProjectPath(LProject.DCUOutputPath, pcRelease, LPlatform)) then
+            if LPlatform in GetPlatformsAllowedToBuild(LInfo) then
             begin
-              Log(FmtMessage(CustomMessage('SetupMainFailedToUninstallPackage'), [ExtractFileName(LProject.FileName), LVersion.Name + ' - ' + GetProjectPlatformName(LPlatform), '4']));
-              Result := False;
+              if (not TryRemoveRADStudioLibrarySearchPath(LVersion, LPlatform, ExpandProjectPath(LProject.DCUOutputPath, pcRelease, LPlatform))) or
+                (not TryRemoveRADStudioLibrarySearchPath(LVersion, LPlatform, ExpandProjectPath(LProject.DCUOutputPath, pcDebug, LPlatform))) then
+              begin
+                Log(FmtMessage(CustomMessage('SetupMainFailedToUninstallPackage'), [ExtractFileName(LProject.FileName), LVersion.Name + ' - ' + GetProjectPlatformName(LPlatform), '4']));
+                Result := False;
+              end;
             end;
             for L := 0 to GetArrayLength(LProject.SourcePaths) - 1 do
             begin

@@ -1,23 +1,24 @@
-<p><a href="https://www.skia4delphi.org"><img src="Assets/Artwork/logo-gradient.svg" alt="Logo" height="300" width="360" /></a></p>
+<p align="center"><a href="https://www.skia4delphi.org"><img src="Assets/Artwork/logo-gradient.svg" alt="Logo" height="300" width="360" /></a></p>
 
 <p>
   <a href="#compatibility"><img src="https://img.shields.io/static/v1?label=rad%20studio&message=xe7%2B&color=silver&style=for-the-badge&logo=delphi&logoColor=white" alt="Delphi XE7+ support" /></a>
   <a href="#compatibility"><img src="https://img.shields.io/static/v1?label=platforms&message=cross-platform&color=silver&style=for-the-badge&logo=delphi&logoColor=white" alt="Cross-platform support" /></a>
   <a href="#compatibility"><img src="https://img.shields.io/static/v1?label=applications&message=console%2C%20fmx%2C%20vcl&color=silver&style=for-the-badge&logo=delphi&logoColor=white" alt="Console, FMX, VCL support" /></a>
-  <a href="https://t.me/skia4delphi"><img src="https://img.shields.io/static/v1?label=telegram&message=skia4delphi&color=silver&style=for-the-badge&logo=data:image/svg%2bxml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgZmlsbD0iI2ZmZiI+PHRpdGxlPlRlbGVncmFtPC90aXRsZT48cGF0aCBkPSJNMTEuOTQ0IDBBMTIgMTIgMCAwIDAgMCAxMmExMiAxMiAwIDAgMCAxMiAxMiAxMiAxMiAwIDAgMCAxMi0xMkExMiAxMiAwIDAgMCAxMiAwYTEyIDEyIDAgMCAwLS4wNTYgMHptNC45NjIgNy4yMjRjLjEtLjAwMi4zMjEuMDIzLjQ2NS4xNGEuNTA2LjUwNiAwIDAgMSAuMTcxLjMyNWMuMDE2LjA5My4wMzYuMzA2LjAyLjQ3Mi0uMTggMS44OTgtLjk2MiA2LjUwMi0xLjM2IDguNjI3LS4xNjguOS0uNDk5IDEuMjAxLS44MiAxLjIzLS42OTYuMDY1LTEuMjI1LS40Ni0xLjktLjkwMi0xLjA1Ni0uNjkzLTEuNjUzLTEuMTI0LTIuNjc4LTEuOC0xLjE4NS0uNzgtLjQxNy0xLjIxLjI1OC0xLjkxLjE3Ny0uMTg0IDMuMjQ3LTIuOTc3IDMuMzA3LTMuMjMuMDA3LS4wMzIuMDE0LS4xNS0uMDU2LS4yMTJzLS4xNzQtLjA0MS0uMjQ5LS4wMjRjLS4xMDYuMDI0LTEuNzkzIDEuMTQtNS4wNjEgMy4zNDUtLjQ4LjMzLS45MTMuNDktMS4zMDIuNDgtLjQyOC0uMDA4LTEuMjUyLS4yNDEtMS44NjUtLjQ0LS43NTItLjI0NS0xLjM0OS0uMzc0LTEuMjk3LS43ODkuMDI3LS4yMTYuMzI1LS40MzcuODkzLS42NjMgMy40OTgtMS41MjQgNS44My0yLjUyOSA2Ljk5OC0zLjAxNCAzLjMzMi0xLjM4NiA0LjAyNS0xLjYyNyA0LjQ3Ni0xLjYzNXoiLz48L3N2Zz4=" alt="Telegram group" /></a>
+  <a href="https://t.me/skia4delphi"><img src="https://img.shields.io/static/v1?label=telegram&message=skia4delphi&color=silver&style=for-the-badge&logo=telegram&logoColor=white" alt="Telegram group" />
+  <a href="https://www.youtube.com/@skia4delphi"><img src="https://img.shields.io/static/v1?label=youtube&message=skia4delphi&color=silver&style=for-the-badge&logo=youtube&logoColor=white" alt="YouTube channel" />
 </p>
 
 #
 
-**[Skia4Delphi](https://skia4delphi.org)** is a cross-platform 2D graphics API for Delphi based on [Google's Skia](https://skia.org/) graphics library.
+**[Skia4Delphi](https://skia4delphi.org)** is an open-source, cross-platform 2D graphics library for Delphi, utilizing the esteemed [Google's Skia](https://skia.org/) library.
 
 https://user-images.githubusercontent.com/1863024/175955980-f6c57253-aaa3-4617-90dc-b0d9bf25e21b.mp4
 
 ## About
 
-Skia is a great open source library for drawing 2D Text, Geometries, Images, focused on accurate, high quality and high performance rendering, which provides common APIs that work across a variety of hardware and software platforms.
+Skia is an exceptional open-source library dedicated to rendering 2D text, geometries and images, with a focus on precision, superior quality and high performance. It offers versatile APIs compatible with a wide range of hardware and software platforms.
 
-Google's Skia Graphics Library serves as the graphics engine for Google Chrome and Chrome OS, Android, Flutter, Xamarin, Mozilla Firefox and Firefox OS, and many other products.
+Google's Skia Graphics Library functions as the graphics engine for numerous products, including Google Chrome, Chrome OS, Android, Flutter, Xamarin, Mozilla Firefox, Firefox OS, and more.
 
 ## Features
 
@@ -33,12 +34,11 @@ Google's Skia Graphics Library serves as the graphics engine for Google Chrome a
 - Image and path effects;
 - Animated image player; (Lottie, GIF, WebP)
 - Image codecs; (bmp, gif, ico, jpg, png, wbmp, webp and raw images)
-- Particles; (provides a way to quickly generate large numbers of drawing primitives with dynamic, animated behavior)
   **and much more...**
 
-## FMX graphics engine replacement
+## FMX render replacement
 
-Using the **Skia4Delphi** library it is possible to override Firemonkey's rendering engine so that it can use Skia as its default Canvas. With that, your Firemonkey application will automatically:
+Using the **Skia4Delphi** library it is possible to override Firemonkey's graphic engine so that it can use Skia as its default Canvas. With that, your Firemonkey application will automatically:
 
 - Draw with antialiasing on any platform (the drawing quality is based on the Form.Quality property);
 - Increase the overall graphics performance of your application by up to 50% (even drawing with higher quality);
@@ -47,7 +47,7 @@ Using the **Skia4Delphi** library it is possible to override Firemonkey's render
 - Fix dozens of inconsistencies in drawings (especially in corners and strokes, such as dashes, and in texts with special emojis);
 - Increase the performance of the library in general ([controls](#controls-vclfmx), drawings, among others...).
 
-[Learn more...](#fmx-canvas)
+[Learn more...](#fmx-render)
 
 # Summary
 
@@ -57,19 +57,17 @@ Using the **Skia4Delphi** library it is possible to override Firemonkey's render
     - [Enable Skia](#enable-skia)
   - [Examples](#examples)
     - [Basic usage](#basic-usage)
-    - [Text Right-to-Left](#text-right-to-left)
-    - [Custom fonts](#custom-fonts)
     - [PDF](#pdf)
     - [Codecs](#codecs)
 - [Integration with Delphi](#integration-with-delphi)
   - [Bitmap](#bitmap)
   - [Image formats](#image-formats)
-  - [FMX Canvas](#fmx-canvas)
-    - [Enable Canvas](#enable-canvas)
+  - **[FMX Render](#fmx-render)**
+    - [Enable Skia Render](#enable-skia-render)
     - [Benchmark](#benchmark)
-    - [Surface](#surface)
-    - [Controls](#controls)
+    - [Skia canvas](#skia-canvas)
     - [Right-to-Left](#right-to-left)
+    - [Custom fonts](#custom-fonts)
 - [Controls VCL/FMX](#controls-vclfmx)
   - [TSkAnimatedImage](#tskanimatedimage)
   - [TSkLabel](#tsklabel)
@@ -96,8 +94,8 @@ You can install **Skia4Delphi** in 3 ways:
 
 - Embarcadero's GetIt _(RAD Studio > Tools > GetIt Package Manager...)_
 
-  <p><img src="https://user-images.githubusercontent.com/11139086/161624030-1b815300-31d8-4606-931b-765f4cb03e79.png#gh-light-mode-only" width="511" alt="GetIt" /></p>
-  <p><img src="https://user-images.githubusercontent.com/11139086/161623994-bd431eb0-f60d-40cd-aa87-84c49456555f.png#gh-dark-mode-only" width="511" alt="GetIt" /></p>
+  <p><img src="https://user-images.githubusercontent.com/11139086/214978288-11c87e9e-7a8b-4686-82c0-5922676d26df.png#gh-light-mode-only" width="511" alt="GetIt" /></p>
+  <p><img src="https://user-images.githubusercontent.com/11139086/214978346-c67bb0f6-ec96-4833-a1e4-7ee39d620e82.png#gh-dark-mode-only" width="511" alt="GetIt" /></p>
 
 - Chocolatey package manager
 
@@ -109,8 +107,6 @@ You can install **Skia4Delphi** in 3 ways:
 
 1. Manual installation is possible, although it is not recommended; [Learn more...](Documents/INSTALLATION.md)
 2. The pre-built Skia binaries were included in the source, but you can easily recompile them; [Learn more...](Documents/BUILD.md)
-3. The pre-built Skia binary for **Linux64** targets was compiled for Debian (eg Ubuntu) and Red Hat (eg CentOS) based systems. If you want another distro you will need to [rebuild;](Documents/BUILD.md)
-4. For Red Hat based systems you must replace the `Binary/Linux64/Release/libsk4d.so` file with the `Binary/Linux64/Release/Other Distributions/Red Hat/libsk4d.so` file.
 
 ### Enable Skia
 
@@ -121,7 +117,7 @@ After install the **Skia4Delphi**, just right click in your application project 
 
 #### Tip
 
-To improve the quality and performance of FMX drawings, replace the FMX graphics engine with the **Skia4Delphi** graphic engine. [Learn more...](#fmx-canvas)
+To improve the quality and performance of FMX drawings, the replacement of the the FMX graphics engine with the **Skia4Delphi** render is automatically enabled. [Learn more...](#fmx-render)
 
 ## Examples
 
@@ -136,10 +132,8 @@ type
   TSkDrawExampleProc = reference to procedure(const ACanvas: ISkCanvas; const ADest: TRectF);
 
 procedure DrawExample(const AWidth, AHeight: Integer; const ADrawProc: TSkDrawExampleProc);
-var
-  LSurface: ISkSurface;
 begin
-  LSurface := TSkSurface.MakeRaster(AWidth, AHeight);
+  var LSurface := TSkSurface.MakeRaster(AWidth, AHeight);
   LSurface.Canvas.Clear(TAlphaColors.Null);
   ADrawProc(LSurface.Canvas, RectF(0, 0, AWidth, AHeight));
   LSurface.MakeImageSnapshot.EncodeToFile('output.png');
@@ -153,19 +147,15 @@ The code below demonstrate how to draw shapes:
 ```pascal
 DrawExample(256, 256,
   procedure (const ACanvas: ISkCanvas; const ADest: TRectF)
-  var
-    LOval: ISkRoundRect;
-    LPaint: ISkPaint;
-    LRect: TRectF;
   begin
-    LPaint := TSkPaint.Create;
+    var LPaint: ISkPaint := TSkPaint.Create;
     LPaint.AntiAlias := True;
 
     LPaint.Color := $FF4285F4;
-    LRect := TRectF.Create(PointF(10, 10), 100, 160);
+    var LRect := TRectF.Create(PointF(10, 10), 100, 160);
     ACanvas.DrawRect(LRect, LPaint);
 
-    LOval := TSkRoundRect.Create;
+    var LOval: ISkRoundRect := TSkRoundRect.Create;
     LOval.SetOval(LRect);
     LOval.Offset(40, 80);
     LPaint.Color := $FFDB4437;
@@ -188,88 +178,22 @@ This code results in the output below:
 
 [Learn more...](Documents/USAGE.md#basic-usage)
 
-### Text Right-to-Left
-
-There are a couple of languages that the direction of the text is from right to left such as Persian, Arabic, Hebrew, and more. With **Skia4Delphi** it is possible to render Right-to-Left. The example below demonstrates how to render a Persian sentence using a text-shaping engine:
-
-```pascal
-DrawExample(256, 256,
-  procedure (const ACanvas: ISkCanvas; const ADest: TRectF)
-  var
-    LBlob: ISkTextBlob;
-    LFont: ISkFont;
-    LPaint: ISkPaint;
-    LShaper: ISkShaper;
-  begin
-    LFont := TSkFont.Create(TSkTypeface.MakeDefault, 55, 1);
-    LShaper := TSkShaper.Create;
-    LBlob := LShaper.Shape('سلام دنیا!', LFont, False, High(Integer));
-
-    LPaint := TSkPaint.Create;
-    LPaint.AntiAlias := True;
-    LPaint.Color := TAlphaColors.Tomato;
-
-    ACanvas.DrawTextBlob(LBlob, 0, 0, LPaint);
-  end);
-```
-
-This code results in the output below:
-
-<p><img src="Assets/Documents/text-rtl.svg" width="192" height="60" alt="Text RTL" /></p>
-
-### Custom fonts
-
-With **Skia4Delphi** it is possible to use custom fonts easily, from the file, without the need to install it on the operating system, regardless of the platform. The example below will draw using two custom fonts:
-
-```pascal
-DrawExample(256, 256,
-  procedure (const ACanvas: ISkCanvas; const ADest: TRectF)
-  var
-    LFont: ISkFont;
-    LPaint: ISkPaint;
-  begin
-    LFont := TSkFont.Create(TSkTypeface.MakeFromFile('Assets\Samples\nunito-extrabold.ttf'), 23);
-    LPaint := TSkPaint.Create;
-    LPaint.Shader := TSkShader.MakeGradientLinear(PointF(0, 0), PointF(256, 145), $FFFF5F5F, $FF5B8DFE, TSkTileMode.Clamp);
-
-    ACanvas.DrawSimpleText('"Each dream that you', 2, 25, LFont, LPaint);
-    ACanvas.DrawSimpleText('leave behind is a part', 2, 55, LFont, LPaint);
-    ACanvas.DrawSimpleText('of your future that will', 2, 85, LFont, LPaint);
-    ACanvas.DrawSimpleText('no longer exist."', 2, 115, LFont, LPaint);
-
-    LFont := TSkFont.Create(TSkTypeface.MakeFromFile('Assets\Samples\bonheur-royale-regular.ttf'), 28);
-    LPaint.Shader := nil;
-    LPaint.Color  := $FF5B8DFE;
-    ACanvas.DrawSimpleText('(Steve Jobs)', 2, 150, LFont, LPaint);
-  end);
-```
-
-This code results in the output below:
-
-<p><img src="Assets/Documents/text-custom-font.svg" width="256" height="168" alt="Text Custom Font" /></p>
-
 ### PDF
 
 With **Skia4Delphi** it is possible to create PDF documents and draw anything on them, from text to images. The example below demonstrates how to create an PDF document and draw an SVG inside it:
 
 ```pascal
-var
-  LCanvas: ISkCanvas;
-  LDocument: ISkDocument;
-  LDocumentStream: TStream;
-  LSVGDOM: ISkSVGDOM;
-  LSize: TSizeF;
-begin
-  LSVGDOM := TSkSVGDOM.MakeFromFile('Assets\Samples\lion.svg');
-  LSize := TSizeF.Create(600, 600);
+  var LSVGDOM := TSkSVGDOM.MakeFromFile('Samples\Demo\Assets\lion.svg');
+  var LSize := TSizeF.Create(600, 600);
   LSVGDOM.SetContainerSize(LSize);
 
-  LDocumentStream := TFileStream.Create('output.pdf', fmCreate);
+  var LDocumentStream := TFileStream.Create('output.pdf', fmCreate);
   try
-    LDocument := TSkDocument.MakePDF(LDocumentStream);
+    var LDocument := TSkDocument.MakePDF(LDocumentStream);
     try
-      LCanvas := LDocument.BeginPage(LSize.Width, LSize.Height);
+      var LCanvas := LDocument.BeginPage(LSize.Width, LSize.Height);
       try
+        // Draw anything here with Skia canvas
         LSVGDOM.Render(LCanvas);
       finally
         LDocument.EndPage;
@@ -280,7 +204,6 @@ begin
   finally
     LDocumentStream.Free;
   end;
-end;
 ```
 
 This code results in the output below:
@@ -312,6 +235,8 @@ The **Skia4Delphi** library supports many image formats. See below the list:
   | WBMP                           | .wbmp       |
   | WebP                           | .webp       |
 
+  _Note: Raw images are limited to non-windows platforms_
+
 - Supported formats for encoding
 
   | Image Format | Extensions  |
@@ -327,13 +252,9 @@ WebP is a modern image format that provides superior lossless and lossy compress
 The example below demonstrates how to encoder to WebP format:
 
 ```pascal
-var
-  LImage: ISkImage;
-begin
-  LImage := TSkImage.MakeFromEncodedFile('Assets\Samples\kung-fu-panda.png');
+  var LImage := TSkImage.MakeFromEncodedFile('Samples\Demo\Assets\kung-fu-panda.png');
   LImage.EncodeToFile('output.webp', TSkEncodedImageFormat.WEBP, 80);
   LImage.EncodeToFile('output.jpg', TSkEncodedImageFormat.JPEG, 80);
-end;
 ```
 
 This code results in the output below:
@@ -350,13 +271,15 @@ This code results in the output below:
 
 ## Bitmap
 
-It is possible to edit TBitmap (**VCL** or **FMX**) with Skia's Canvas using the code below:
+It is possible to edit TBitmap (**VCL** or **FMX**) with Skia's canvas using the code below:
 
 ```pascal
-var
-  LBitmap: TBitmap;
-begin
-  LBitmap := TBitmap.Create(100, 100);
+uses
+  Skia, Skia.FMX {or Skia.Vcl};
+
+...
+
+  var LBitmap := TBitmap.Create(100, 100);
   try
     LBitmap.SkiaDraw(
       procedure (const ACanvas: ISkCanvas)
@@ -373,15 +296,15 @@ The library registers the following codecs:
 
 - **FMX**: .bmp, .gif, .ico, .webp, .wbmp and raw images (.arw, .cr2, .dng, .nef, .nrw, .orf, .raf, .rw2, .pef and .srw).
 
-As a result, any Delphi control, such as a TImage, can normally load these new formats.
+As a result, any Delphi control, such as a TImage, can normally load these new formats automatically.
 
-## FMX Canvas
+## **FMX Render**
 
-It is possible to replace the default Canvas from FMX to Skia based Canvas. Once this feature is enabled, all FMX controls will be painted using Skia4Delphi automatically. With that it is possible to improve the quality and performance of the drawings for the FMX as well as for the whole library.
+It is possible to replace the default Canvas from FMX to Skia based Canvas. Once this feature is enabled, all FMX controls will be painted internally using Skia4Delphi automatically. With that it is possible to improve the quality and performance of the drawings throughout the FMX app, as well as generating better integration with other library features.
 
-### Enable Canvas
+### Enable Skia Render
 
-Open the source of your Delphi Application Project _(.dpr)_, include the `Skia.FMX` unit **after** the `FMX.Forms` unit, and set the `GlobalUseSkia` to **True**, as in the example below:
+Open the source of your Delphi Application Project _(.dpr)_, include the `Skia.FMX` unit right **after** the `FMX.Forms` unit, and set the `GlobalUseSkia` to **True**, as in the example below:
 
 ```pascal
 uses
@@ -400,9 +323,9 @@ begin
 
 #### Remarks
 
-1. `Skia.FMX` unit must be included after the `FMX.Forms`;
-2. The **Metal** implementation is experimental, but can be used by including the `FMX.Types` unit **after** the `FMX.Forms` unit, and setting `GlobalUseMetal` to **True** together with `GlobalUseSkia`;
-3. `GlobalUseSkia` has no effect on Linux. (although not supported, all [controls](#controls-vclfmx) work perfectly)
+1. `Skia.FMX` unit must be included right after the `FMX.Forms`;
+2. The **Skia Metal** render can be used by including the `FMX.Types` unit right **after** the `FMX.Forms` unit, and setting `GlobalUseMetal` to **True** together with `GlobalUseSkia` to improve the speed in iOS and macOS;
+3. `GlobalUseSkia` has no effect on Linux. (although not supported, all [controls](#controls-vclfmx) work perfectly, just like the rest of the library)
 4. This declaration of `GlobalUseSkia := True;`, as well as other variables of FMX itself, such as `GlobalUseMetal`, can also be made in the initialization of some unit instead of .dpr. Sometimes this is really necessary because if in the initialization or in the class constructor of some unit, bitmaps are used, the GlobalUseXXX declarations of the .dpr will have no effect. In this case, just create a unit in the project like "Project.Startup.pas", place the GlobalUseXXX declarations in the initialization of this new unit, and declare this new unit before any other unit of yours in the .dpr, that is, right after FMX.Forms.
 
 ### Benchmark
@@ -434,39 +357,35 @@ The performance test is a simulation of a real application, with hundreds of con
 
 #### Remarks
 
-1. Delphi's `TGPUCanvas` (default Canvas used on cell phones, as well as Apple computers when Metal is enabled) does not use anti-aliasing (anti-aliasing is a technique that improves the quality of diagonal lines) while Skia uses it. That is, Skia has better performance and quality in the drawings than default FMX Canvas.
+1. Default FMX renderer does not use anti-aliasing on some platforms (like on mobile) while Skia Render uses it. That is, Skia has better performance and quality in the drawings than default FMX Render.
 
-   | FMX circle                                     | Skia circle                                      |
-   | ---------------------------------------------- | ------------------------------------------------ |
+   | FMX default                                    | FMX with Skia render                             |
+   | :--------------------------------------------: | :----------------------------------------------: |
    | ![FMX Circle](Assets/Documents/fmx-circle.png) | ![Skia Circle](Assets/Documents/skia-circle.png) |
 
-2. Firemonkey uses Quartz on macOS, and for **Skia4Delphi** use OpenGL it would be necessary to edit the Delphi runtime library, so we choose to keep the rasterization method and not implement OpenGL on macOS. In the future it is likely that we will set Metal as default, as OpenGL is deprecated in Apple's operating systems. For those who want to use the Skia Canvas on macOS we recommend enabling Metal.
+2. On macOS `Skia4Delphi`'s default renderer does not have GPU acceleration. Therefore, it is highly recommended to use **Skia Metal** (combining the activation of `GlobalUseSkia` and `GlobalUseMetal`), to get the full performance of the machine.
 
 3. Tests made from virtual machines are inconsistent with reality.
 
-### Surface
+### Skia canvas
 
-Using Skia's Canvas, during the Scene of a Bitmap or Control (between the `BeginScene` and `EndScene` calls), it is possible to access the `Surface` property as follows:
+Using Skia's Render, during the Scene of a Bitmap, Control or Form, it is possible to access the Skia canvas property as follows:
+
+#### In Bitmaps
 
 ```pascal
 uses
-  Skia,
-  Skia.FMX.Graphics;
+  Skia, Skia.FMX.Graphics;
 
-var
-  LBitmap: TBitmap;
-  LCanvas: ISkCanvas;
 begin
-  LBitmap := TBitmap.Create(300, 300);
+  var LBitmap := TBitmap.Create(300, 300);
   try
-    if LBitmap.Canvas.BeginScene then
-    begin
-      try
-        LCanvas := TSkCanvasCustom(LBitmap.Canvas).Surface.Canvas;
-        // Draw with LCanvas...
-      finally
-        LBitmap.Canvas.EndScene;
-      end;
+    LBitmap.Canvas.BeginScene;
+    try
+      var LCanvas: ISkCanvas := TSkCanvasCustom(LBitmap.Canvas).Canvas;
+      // Draw using Skia canvas (LCanvas) directly to unlock new features...
+    finally
+      LBitmap.Canvas.EndScene;
     end;
   finally
     LBitmap.Free;
@@ -474,55 +393,37 @@ begin
 end;
 ```
 
-#### Remarks
-
-1. `Surface` property will only be available during Scene (between the `BeginScene` and `EndScene` calls);
-2. Canvas for UI (created from a window _eg rectangles, circles, objects inherited from TControl_) must draw exclusively from the **main thread**, while Canvas created from `TBitmap` are **thread safe**.
-
-#### Tip
-
-If your app has background threads that do a lot of bitmap drawings, be aware that it is safe to remove the global lock from the `TCanvas` base class when Skia based Canvas is enabled, to allow your app to do truly parallel drawings, gaining a lot of performance. For that, it is necessary to make a patch in the units `FMX.Graphics.pas` and `FMX.TextLayout.pas`. [Learn more](https://quality.embarcadero.com/browse/RSP-37232)
-
-### Controls
-
-Using Skia's Canvas, it is possible to access the Surface property from the `Paint` procedure of a control, to draw directly using Skia, as shown below:
+#### In Controls & Forms
 
 ```pascal
-unit Unit1;
-
-interface
-
-uses
-  FMX.Controls,
-  FMX.Graphics,
-  Skia,
-  Skia.FMX.Graphics;
-
-
 type
-  TControl1 = class(TControl)
+  TMyControl = class(TControl)
   protected
     procedure Paint; override;
   end;
 
 implementation
 
-{ TControl1 }
+uses
+  Skia, Skia.FMX.Graphics;
 
-procedure TControl1.Paint;
-var
-  LCanvas: ISkCanvas;
+procedure TMyControl.Paint;
 begin
-  LCanvas := TSkCanvasCustom(Canvas).Surface.Canvas;
-  // Draw with LCanvas...
+  var LCanvas: ISkCanvas := TSkCanvasCustom(Canvas).Canvas;
+  // Draw using Skia canvas (LCanvas) directly to unlock new features...
 end;
 ```
 
+#### Remarks
+
+1. `Canvas` property will only be available during Scene, that is, between the `BeginScene` and `EndScene` of the Bitmaps, and during paint events/methods for Controls and Forms (such as OnPaint, OnPainting, PaintChildren, among others);
+2. Canvas for UI (created from a window _eg TRectangles, TCircles, objects inherited from TControl_) must draw exclusively from the **main thread**, while Canvas created from `TBitmap` are **thread safe**.
+
 ### Right-to-Left
 
-Using Skia's Canvas, your application will now support Right-To-Left text rendering. But for that you will need to make 3 changes to your project:
+Using Skia's render, your application will now support Right-To-Left text rendering. But for that you will need to make 3 changes to your project:
 
-1. Open the source of your Delphi Application Project _(.dpr)_, include the line `Application.BiDiMode := TBiDiMode.bdRightToLeft;`, like below:
+1. For RAD Studio prior to 11.3, open the source of your Delphi Application Project _(.dpr)_, include the line `Application.BiDiMode := TBiDiMode.bdRightToLeft;`, like below:
 
 ```pascal
 program Project1;
@@ -548,6 +449,30 @@ end.
 2. Set the property `BiDiMode` of your forms to `bdRightToLeft`;
 3. Keyboard input controls like TEdit and TMemo, need to be fixed by Embarcadero, meanwhile, as a workaround, set the `ControlType` property of these controls to `Platform`.
 
+### Custom fonts
+
+Using Skia's renderer, it is possible to use custom font in any FMX control, on any platform in a very simple way. Just register them in the app initialization:
+
+```pascal
+program Project1;
+
+uses
+  System.StartUpCopy,
+  FMX.Forms,
+  Skia.FMX,
+  Unit1 in 'Unit1.pas' {Form1};
+
+{$R *.res}
+
+begin
+  GlobalUseSkia := True;
+  TSkDefaultProviders.RegisterTypeface('Poppins.ttf');
+  Application.Initialize;
+  Application.CreateForm(TForm1, Form1);
+  Application.Run;
+end.
+```
+
 # Controls VCL/FMX
 
 ## TSkAnimatedImage
@@ -564,13 +489,9 @@ end.
 The example below demonstrates how to play lottie files using **TSkAnimatedImage**:
 
 ```pascal
-var
-  LAnimatedImage: TSkAnimatedImage;
-begin
-  LAnimatedimage := TSkAnimatedImage.Create(Self);
-  LAnimatedimage.LoadFromFile('Assets\Samples\rocket.json');
+  var LAnimatedimage := TSkAnimatedImage.Create(Self);
+  LAnimatedimage.LoadFromFile('Samples\Demo\Assets\rocket.json');
   LAnimatedimage.Parent := Self;
-end;
 ```
 
 The example above results in the output below:
@@ -603,15 +524,13 @@ The example above results in the output below:
 
 ## TSkPaintBox
 
-**TSkPaintBox** is the ideal control for painting with skia api directly on the canvas with the event `OnDraw`:
+**TSkPaintBox** is the ideal control for painting with Skia API directly on the canvas with the event `OnDraw`:
 
 ```pascal
 procedure TForm1.SkPaintBox1Draw(ASender: TObject; const ACanvas: ISkCanvas;
   const ADest: TRectF; const AOpacity: Single);
-var
-  LPaint: ISkPaint;
 begin
-  LPaint := TSkPaint.Create;
+  var LPaint: ISkPaint := TSkPaint.Create;
   LPaint.Shader := TSkShader.MakeGradientSweep(ADest.CenterPoint,
     [$FFFCE68D, $FFF7CAA5, $FF2EBBC1, $FFFCE68D]);
   ACanvas.DrawPaint(LPaint);
@@ -622,25 +541,21 @@ The example above results in the output below:
 
 ![Paint Box](Assets/Documents/paintbox.png)
 
-_Note: The TSkPaintBox has a drawing caching system. To force a drawing refresh, call TSkPaintBox.Redraw. However, this cache system does not exist in FMX apps that have enabled [Skia4Delphi graphic engine](#fmx-canvas) for optimization reasons._
+_Note: The TSkPaintBox has a drawing caching system. To force a drawing refresh, call TSkPaintBox.Redraw. However, this cache system does not exist in FMX apps that have enabled [Skia4Delphi render](#fmx-render) for optimization reasons._
 
 ## TSkSvg
 
 **TSkSvg** is the control to load and display SVG easily:
 
 ```pascal
-var
-  LSvg: TSkSvg;
-begin
-  LSvg := TSkSvg.Create(Self);
-  LSvg.Svg.Source := TFile.ReadAllText('Assets\Samples\gorilla.svg');
+  var LSvg := TSkSvg.Create(Self);
+  LSvg.Svg.Source := TFile.ReadAllText('Samples\Demo\Assets\gorilla.svg');
   LSvg.Parent := Self;
-end;
 ```
 
 The example above results in the output below:
 
-<p><img src="Assets/Samples/gorilla.svg" width="200" height="200" alt="Gorilla" /></p>
+<p><img src="Samples/Demo/Assets/gorilla.svg" width="200" height="200" alt="Gorilla" /></p>
 
 [Learn more...](Documents/SVG.md)
 
@@ -654,25 +569,24 @@ The example above results in the output below:
 
 For the platforms supported by **Skia4Delphi** (listed above), the OS versions supported by the library are the same [OS versions that RAD Studio supports.](https://docwiki.embarcadero.com/PlatformStatus/en/Main_Page)
 
-## Remarks
-
-1. The pre-built Skia binary for **Linux64** targets was compiled for Debian (eg Ubuntu) and Red Hat (eg CentOS) based systems. If you want another distro you will need to [rebuild;](Documents/BUILD.md)
-2. For Red Hat based systems you must replace the `Binary/Linux64/Release/libsk4d.so` file with the `Binary/Linux64/Release/Other Distributions/Red Hat/libsk4d.so` file.
-
 # Documentation
 
 The APIs are very similar to Skia's, few methods and functions have been renamed for readability, so the [Skia documentation](https://skia.org/docs) can be used.
 
 # Version
 
-**[Skia4Delphi 3.4.1](/../../releases/latest)**
+**[Skia4Delphi 6.0.0-beta1](/../../releases/latest)**
 
-Skia Version used: [chrome/m98](https://github.com/google/skia/tree/chrome/m98)
-What has changed from the original code? [Compare.](https://github.com/google/skia/compare/chrome/m98...skia4delphi:main)
+Skia Version used: [chrome/m107](https://github.com/google/skia/tree/chrome/m107)
 
-# Sponsors
+# Sponsors & Partners
 
-<p><a href="https://www.a-dato.com"><img src="https://user-images.githubusercontent.com/11139086/186210969-0179cdbd-b65a-41cc-ad15-b7cc828a764f.png" alt="A-dato logo" width="200" /></a></p>
+<p>
+  <a href="https://www.a-dato.com">
+    <img src="https://user-images.githubusercontent.com/11139086/186210969-0179cdbd-b65a-41cc-ad15-b7cc828a764f.png" alt="A-dato logo" width="200" /></a>
+  <a href="https://www.delphistyles.com">
+    <img src="https://user-images.githubusercontent.com/11139086/199366200-c5766e71-2684-4990-94bb-d44094fb90c4.png" alt="DelphiStyles logo" width="100" margin-left="100" /></a>
+</p>
 
 # Contributors
 

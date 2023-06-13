@@ -2,10 +2,9 @@
 {                                                                        }
 {                              Skia4Delphi                               }
 {                                                                        }
-{ Copyright (c) 2011-2022 Google LLC.                                    }
-{ Copyright (c) 2021-2022 Skia4Delphi Project.                           }
+{ Copyright (c) 2021-2023 Skia4Delphi Project.                           }
 {                                                                        }
-{ Use of this source code is governed by a BSD-style license that can be }
+{ Use of this source code is governed by the MIT license that can be     }
 { found in the LICENSE file.                                             }
 {                                                                        }
 {************************************************************************}
@@ -18,11 +17,11 @@ interface
 uses
   { Delphi }
   Winapi.Windows, Winapi.ShellAPI, System.SysUtils, System.Classes,
-  System.Types, System.UITypes, Vcl.Graphics, Vcl.Controls, Vcl.Forms,
-  Vcl.Dialogs, Vcl.ExtCtrls,
+  System.Types, System.UITypes, System.IOUtils, Vcl.Graphics, Vcl.Controls,
+  Vcl.Forms, Vcl.Dialogs, Vcl.ExtCtrls,
 
   { Skia }
-  Skia, Skia.Vcl,
+  System.Skia, Vcl.Skia,
 
   { Sample }
   Sample.Form.Base;
@@ -103,7 +102,7 @@ begin
     LDocument := TSkDocument.MakeXPS(LDocumentStream);
     if LDocument = nil then
     begin
-      Showmessage('This OS doesn''t support XPS!');
+      ShowMessage('This OS doesn''t support XPS!');
       Exit;
     end;
     try
@@ -119,12 +118,12 @@ begin
   finally
     LDocumentStream.Free;
   end;
-  Showmessage('Created XPS file!');
+  ShowMessage('Created XPS file!');
 end;
 
 procedure TfrmDocuments.ViewPDF(AFileName: string);
 begin
-  AFileName := 'file://' + AFileName.Replace('\', '/');
+  AFileName := 'file://' + TPath.GetFullPath(AFileName).Replace('\', '/');
   ShellExecute(0, 'open', PChar(AFileName), nil, nil, SW_SHOWNORMAL);
 end;
 

@@ -36,12 +36,16 @@
 __history/
 __recovery/
 *.~*
+__astcache/
 
 # Castalia statistics file
 *.stat
 
 # boss
 modules/
+
+# VS Code history
+.history/
 
 # Custom
 *.dex

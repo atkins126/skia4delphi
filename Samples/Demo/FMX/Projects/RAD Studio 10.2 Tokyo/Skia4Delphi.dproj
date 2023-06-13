@@ -1,8 +1,7 @@
 ﻿<!--
- Copyright (c) 2011-2022 Google LLC.
- Copyright (c) 2021-2022 Skia4Delphi Project.
+ Copyright (c) 2021-2023 Skia4Delphi Project.
 
- Use of this source code is governed by a BSD-style license that can be
+ Use of this source code is governed by the MIT license that can be
  found in the LICENSE file.
 -->
 <Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
@@ -84,7 +83,7 @@
         <Icns_MainIcns>$(BDS)\bin\delphi_PROJECTICNS.icns</Icns_MainIcns>
         <Icon_MainIcon>$(BDS)\bin\delphi_PROJECTICON.ico</Icon_MainIcon>
         <VerInfo_IncludeVerInfo>true</VerInfo_IncludeVerInfo>
-        <VerInfo_Keys>CompanyName=skia4delphi.org;FileDescription=$(MSBuildProjectName);FileVersion=3.4.1.0;InternalName=;LegalCopyright=;LegalTrademarks=;OriginalFilename=;ProgramID=org.skia4delphi.demo;ProductName=$(MSBuildProjectName);ProductVersion=3.4.1.0;Comments=</VerInfo_Keys>
+        <VerInfo_Keys>CompanyName=skia4delphi.org;FileDescription=$(MSBuildProjectName);FileVersion=1.0.0.0;InternalName=;LegalCopyright=;LegalTrademarks=;OriginalFilename=;ProgramID=org.skia4delphi.demo;ProductName=$(MSBuildProjectName);ProductVersion=1.0.0.0;Comments=</VerInfo_Keys>
         <VerInfo_Locale>1033</VerInfo_Locale>
         <VerInfo_MajorVer>3</VerInfo_MajorVer>
     </PropertyGroup>
@@ -195,16 +194,16 @@
             <Form>frmMain</Form>
             <FormType>fmx</FormType>
         </DCCReference>
-        <DCCReference Include="..\..\Source\Sample.Form.Particles.pas">
-            <Form>frmParticles</Form>
-            <FormType>fmx</FormType>
-        </DCCReference>
         <DCCReference Include="..\..\Source\Sample.Form.PathsAndEffects.pas">
             <Form>frmPathsAndEffects</Form>
             <FormType>fmx</FormType>
         </DCCReference>
         <DCCReference Include="..\..\Source\Sample.Form.RuntimeEffects.pas">
             <Form>frmRuntimeEffects</Form>
+            <FormType>fmx</FormType>
+        </DCCReference>
+        <DCCReference Include="..\..\Source\Sample.Form.SplashScreen.pas">
+            <Form>frmSplashScreen</Form>
             <FormType>fmx</FormType>
         </DCCReference>
         <DCCReference Include="..\..\Source\Sample.Form.Text.pas">

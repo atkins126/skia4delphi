@@ -2,10 +2,9 @@
 {                                                                        }
 {                              Skia4Delphi                               }
 {                                                                        }
-{ Copyright (c) 2011-2022 Google LLC.                                    }
-{ Copyright (c) 2021-2022 Skia4Delphi Project.                           }
+{ Copyright (c) 2021-2023 Skia4Delphi Project.                           }
 {                                                                        }
-{ Use of this source code is governed by a BSD-style license that can be }
+{ Use of this source code is governed by the MIT license that can be     }
 { found in the LICENSE file.                                             }
 {                                                                        }
 {************************************************************************}
@@ -22,7 +21,7 @@ uses
   Vcl.ExtCtrls,
 
   { Skia }
-  Skia, Skia.Vcl,
+  System.Skia, Vcl.Skia,
 
   { Sample }
   Sample.Form.Base;
@@ -105,15 +104,15 @@ type
 class function TMatrixHelper.CreateFromMatrix3D(
   const AMatrix3D: TMatrix3D): TMatrix;
 begin
-  Result.M11 := AMatrix3D.M11;
-  Result.M21 := AMatrix3D.M21;
-  Result.M31 := AMatrix3D.M41;
-  Result.M12 := AMatrix3D.M12;
-  Result.M22 := AMatrix3D.M22;
-  Result.M32 := AMatrix3D.M42;
-  Result.M13 := AMatrix3D.M14;
-  Result.M23 := AMatrix3D.M24;
-  Result.M33 := AMatrix3D.M44;
+  Result.m11 := AMatrix3D.m11;
+  Result.m21 := AMatrix3D.m21;
+  Result.m31 := AMatrix3D.m41;
+  Result.m12 := AMatrix3D.m12;
+  Result.m22 := AMatrix3D.m22;
+  Result.m32 := AMatrix3D.m42;
+  Result.m13 := AMatrix3D.m14;
+  Result.m23 := AMatrix3D.m24;
+  Result.m33 := AMatrix3D.m44;
 end;
 // - ---------------------------------------------------------------------------
 {$ENDREGION}

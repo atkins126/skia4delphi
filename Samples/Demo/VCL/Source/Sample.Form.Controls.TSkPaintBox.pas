@@ -2,10 +2,9 @@
 {                                                                        }
 {                              Skia4Delphi                               }
 {                                                                        }
-{ Copyright (c) 2011-2022 Google LLC.                                    }
-{ Copyright (c) 2021-2022 Skia4Delphi Project.                           }
+{ Copyright (c) 2021-2023 Skia4Delphi Project.                           }
 {                                                                        }
-{ Use of this source code is governed by a BSD-style license that can be }
+{ Use of this source code is governed by the MIT license that can be     }
 { found in the LICENSE file.                                             }
 {                                                                        }
 {************************************************************************}
@@ -21,7 +20,7 @@ uses
   Vcl.ExtCtrls,
 
   { Skia }
-  Skia, Skia.Vcl,
+  System.Skia, Vcl.Skia,
 
   { Sample }
   Sample.Form.Base;
@@ -61,7 +60,7 @@ type
   TFreehandRender = class(TInterfacedObject, IFreehandRender)
   strict private
     FCurrentPath: ISkPath;
-    FLastPoint: TPoint;
+    FLastPoint: TPointF;
     FOldPaths: TArray<ISkPath>;
     FPathBuilder: ISkPathBuilder;
     FPressed: Boolean;
@@ -153,8 +152,8 @@ procedure TFreehandRender.OnMouseDown(ASender: TObject; AButton: TMouseButton;
 begin
   FPressed := True;
   FPathBuilder := TSkPathBuilder.Create;
-  FPathBuilder.MoveTo(X, Y);
-  FLastPoint := Point(X, Y);
+  FLastPoint := PointF(X, Y) / (ASender as TSkPaintBox).ScaleFactor;
+  FPathBuilder.MoveTo(FLastPoint.X, FLastPoint.Y);
   FCurrentPath := nil;
 end;
 
@@ -174,12 +173,15 @@ procedure TFreehandRender.OnMouseMove(ASender: TObject; AShift: TShiftState; X,
   Y: Integer);
 const
   MinPointsDistance = 5;
+var
+  LPoint: TPointF;
 begin
-  if FPressed and Assigned(FPathBuilder) and (FLastPoint.Distance(Point(X, Y)) >= MinPointsDistance) then
+  LPoint := PointF(X, Y) / (ASender as TSkPaintBox).ScaleFactor;
+  if FPressed and Assigned(FPathBuilder) and (FLastPoint.Distance(LPoint) >= MinPointsDistance) then
   begin
     FCurrentPath := nil;
-    FPathBuilder.LineTo(X, Y);
-    FLastPoint := Point(X, Y);
+    FPathBuilder.LineTo(LPoint.X, LPoint.Y);
+    FLastPoint := LPoint;
     (ASender as TSkPaintBox).Redraw;
   end;
 end;

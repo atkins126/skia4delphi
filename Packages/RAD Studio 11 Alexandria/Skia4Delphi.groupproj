@@ -1,8 +1,7 @@
 ﻿<!--
- Copyright (c) 2011-2022 Google LLC.
- Copyright (c) 2021-2022 Skia4Delphi Project.
+ Copyright (c) 2021-2023 Skia4Delphi Project.
 
- Use of this source code is governed by a BSD-style license that can be
+ Use of this source code is governed by the MIT license that can be
  found in the LICENSE file.
 -->
 <Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
@@ -92,7 +91,7 @@
         <BuildGroupProject Include="Skia.Package.RTL.dproj">
             <ProjectGuid>{FA99292F-A9C8-44CF-A1DD-F784D200D11E}</ProjectGuid>
             <Configurations>Debug;Release</Configurations>
-            <Platforms>Android;Android64;iOSDevice64;Linux64;OSX64;OSXARM64;Win32;Win64</Platforms>
+            <Platforms>Android;Android64;iOSDevice64;iOSSimARM64;Linux64;OSX64;OSXARM64;Win32;Win64</Platforms>
             <Enabled>True</Enabled>
         </BuildGroupProject>
         <BuildGroupProject Include="Skia.Package.VCL.dproj">
@@ -104,7 +103,7 @@
         <BuildGroupProject Include="Skia.Package.FMX.dproj">
             <ProjectGuid>{7EED43C7-FD38-4995-B724-4A27D8F0FBBA}</ProjectGuid>
             <Configurations>Debug;Release</Configurations>
-            <Platforms>Android;Android64;iOSDevice64;Linux64;OSX64;OSXARM64;Win32;Win64</Platforms>
+            <Platforms>Android;Android64;iOSDevice64;iOSSimARM64;Linux64;OSX64;OSXARM64;Win32;Win64</Platforms>
             <Enabled>True</Enabled>
         </BuildGroupProject>
         <BuildGroupProject Include="Skia.Package.VCL.Designtime.dproj">

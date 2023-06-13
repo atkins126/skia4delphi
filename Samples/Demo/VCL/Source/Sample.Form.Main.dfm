@@ -1,5 +1,6 @@
 inherited frmMain: TfrmMain
   ClientHeight = 620
+  OnShow = FormShow
   ExplicitHeight = 659
   PixelsPerInch = 96
   TextHeight = 15
@@ -56,7 +57,7 @@ inherited frmMain: TfrmMain
           Align = alTop
           OnClick = pnlBasicsClick
           TextSettings.Font.Size = 11.000000000000000000
-          TextSettings.FontColor = xFF9FA5A8
+          TextSettings.FontColor = xFFA0A0A1
           TextSettings.MaxLines = 1
           Words = <
             item
@@ -78,6 +79,7 @@ inherited frmMain: TfrmMain
           Align = alTop
           OnClick = pnlBasicsClick
           TextSettings.Font.Weight = Medium
+          TextSettings.FontColor = xFF1B1B1B
           TextSettings.MaxLines = 2
           Words = <
             item
@@ -92,7 +94,7 @@ inherited frmMain: TfrmMain
           Height = 16
           Anchors = [akTop, akRight]
           OnClick = pnlBasicsClick
-          Svg.Source = 
+          Svg.Source =
             '<?xml version="1.0" encoding="iso-8859-1"?>'#13#10'<!-- Generator: Ado' +
             'be Illustrator 19.0.0, SVG Export Plug-In . SVG Version: 6.00 Bu' +
             'ild 0)  -->'#13#10'<svg version="1.1" id="Capa_1" xmlns="http://www.w3' +
@@ -161,7 +163,7 @@ inherited frmMain: TfrmMain
           Align = alTop
           OnClick = pnlControlsClick
           TextSettings.Font.Size = 11.000000000000000000
-          TextSettings.FontColor = xFF9FA5A8
+          TextSettings.FontColor = xFFA0A0A1
           TextSettings.MaxLines = 1
           Words = <
             item
@@ -183,6 +185,7 @@ inherited frmMain: TfrmMain
           Align = alTop
           OnClick = pnlControlsClick
           TextSettings.Font.Weight = Medium
+          TextSettings.FontColor = xFF1B1B1B
           TextSettings.MaxLines = 2
           Words = <
             item
@@ -197,7 +200,7 @@ inherited frmMain: TfrmMain
           Height = 16
           Anchors = [akTop, akRight]
           OnClick = pnlControlsClick
-          Svg.Source = 
+          Svg.Source =
             '<?xml version="1.0" encoding="iso-8859-1"?>'#13#10'<!-- Generator: Ado' +
             'be Illustrator 19.0.0, SVG Export Plug-In . SVG Version: 6.00 Bu' +
             'ild 0)  -->'#13#10'<svg version="1.1" id="Capa_1" xmlns="http://www.w3' +
@@ -266,7 +269,7 @@ inherited frmMain: TfrmMain
           Align = alTop
           OnClick = pnlDocumentsClick
           TextSettings.Font.Size = 11.000000000000000000
-          TextSettings.FontColor = xFF9FA5A8
+          TextSettings.FontColor = xFFA0A0A1
           TextSettings.MaxLines = 1
           Words = <
             item
@@ -288,6 +291,7 @@ inherited frmMain: TfrmMain
           Align = alTop
           OnClick = pnlDocumentsClick
           TextSettings.Font.Weight = Medium
+          TextSettings.FontColor = xFF1B1B1B
           TextSettings.MaxLines = 2
           Words = <
             item
@@ -303,7 +307,7 @@ inherited frmMain: TfrmMain
           ParentCustomHint = False
           Anchors = [akTop, akRight]
           OnClick = pnlDocumentsClick
-          Svg.Source = 
+          Svg.Source =
             '<?xml version="1.0" encoding="iso-8859-1"?>'#13#10'<!-- Generator: Ado' +
             'be Illustrator 19.0.0, SVG Export Plug-In . SVG Version: 6.00 Bu' +
             'ild 0)  -->'#13#10'<svg version="1.1" id="Capa_1" xmlns="http://www.w3' +
@@ -372,7 +376,7 @@ inherited frmMain: TfrmMain
           Align = alTop
           OnClick = pnlImageClick
           TextSettings.Font.Size = 11.000000000000000000
-          TextSettings.FontColor = xFF9FA5A8
+          TextSettings.FontColor = xFFA0A0A1
           TextSettings.MaxLines = 1
           Words = <
             item
@@ -394,6 +398,7 @@ inherited frmMain: TfrmMain
           Align = alTop
           OnClick = pnlImageClick
           TextSettings.Font.Weight = Medium
+          TextSettings.FontColor = xFF1B1B1B
           TextSettings.MaxLines = 2
           Words = <
             item
@@ -408,7 +413,7 @@ inherited frmMain: TfrmMain
           Height = 16
           Anchors = [akTop, akRight]
           OnClick = pnlImageClick
-          Svg.Source = 
+          Svg.Source =
             '<?xml version="1.0" encoding="iso-8859-1"?>'#13#10'<!-- Generator: Ado' +
             'be Illustrator 19.0.0, SVG Export Plug-In . SVG Version: 6.00 Bu' +
             'ild 0)  -->'#13#10'<svg version="1.1" id="Capa_1" xmlns="http://www.w3' +
@@ -426,111 +431,6 @@ inherited frmMain: TfrmMain
           ExplicitLeft = 274
         end
         object pnlImageLine: TPanel
-          Left = 0
-          Top = 49
-          Width = 303
-          Height = 1
-          Align = alBottom
-          BevelOuter = bvNone
-          Color = 15132908
-          ParentBackground = False
-          TabOrder = 0
-          StyleElements = [seFont, seBorder]
-        end
-      end
-      object pnlParticles: TPanel
-        AlignWithMargins = True
-        Left = 20
-        Top = 421
-        Width = 303
-        Height = 50
-        Cursor = crHandPoint
-        Margins.Left = 20
-        Margins.Top = 0
-        Margins.Right = 20
-        Margins.Bottom = 0
-        Align = alTop
-        BevelOuter = bvNone
-        Font.Charset = DEFAULT_CHARSET
-        Font.Color = 15134704
-        Font.Height = -12
-        Font.Name = 'Segoe UI'
-        Font.Style = []
-        ParentColor = True
-        ParentFont = False
-        ShowCaption = False
-        TabOrder = 4
-        OnClick = pnlParticlesClick
-        DesignSize = (
-          303
-          50)
-        object lblParticlesDescription: TSkLabel
-          AlignWithMargins = True
-          Left = 0
-          Top = 25
-          Width = 287
-          Height = 15
-          Margins.Left = 0
-          Margins.Top = 0
-          Margins.Right = 16
-          Margins.Bottom = 0
-          Align = alTop
-          OnClick = pnlParticlesClick
-          TextSettings.Font.Size = 11.000000000000000000
-          TextSettings.FontColor = xFF9FA5A8
-          TextSettings.MaxLines = 1
-          Words = <
-            item
-              Caption = 'Create many kinds of particles animations'
-            end>
-          ExplicitTop = 26
-          ExplicitWidth = 303
-        end
-        object lblParticlesTitle: TSkLabel
-          AlignWithMargins = True
-          Left = 0
-          Top = 6
-          Width = 287
-          Height = 19
-          Margins.Left = 0
-          Margins.Top = 6
-          Margins.Right = 16
-          Margins.Bottom = 0
-          Align = alTop
-          OnClick = pnlParticlesClick
-          TextSettings.Font.Weight = Medium
-          TextSettings.MaxLines = 2
-          Words = <
-            item
-              Caption = 'Skia4Delphi Particles'
-            end>
-          ExplicitWidth = 303
-        end
-        object svgParticlesArrow: TSkSvg
-          Left = 290
-          Top = 17
-          Width = 16
-          Height = 16
-          Anchors = [akTop, akRight]
-          OnClick = pnlParticlesClick
-          Svg.Source = 
-            '<?xml version="1.0" encoding="iso-8859-1"?>'#13#10'<!-- Generator: Ado' +
-            'be Illustrator 19.0.0, SVG Export Plug-In . SVG Version: 6.00 Bu' +
-            'ild 0)  -->'#13#10'<svg version="1.1" id="Capa_1" xmlns="http://www.w3' +
-            '.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px' +
-            '" y="0px"'#13#10#9' viewBox="0 0 47.255 47.255" style="enable-backgroun' +
-            'd:new 0 0 47.255 47.255;" xml:space="preserve">'#13#10'<g>'#13#10#9'<path d="' +
-            'M12.314,47.255c-0.256,0-0.512-0.098-0.707-0.293c-0.391-0.391-0.3' +
-            '91-1.023,0-1.414l21.92-21.92l-21.92-21.92'#13#10#9#9'c-0.391-0.391-0.391' +
-            '-1.023,0-1.414s1.023-0.391,1.414,0L35.648,22.92c0.391,0.391,0.39' +
-            '1,1.023,0,1.414L13.021,46.962'#13#10#9#9'C12.825,47.157,12.57,47.255,12.' +
-            '314,47.255z"/>'#13#10'</g>'#13#10'<g>'#13#10'</g>'#13#10'<g>'#13#10'</g>'#13#10'<g>'#13#10'</g>'#13#10'<g>'#13#10'</g>' +
-            #13#10'<g>'#13#10'</g>'#13#10'<g>'#13#10'</g>'#13#10'<g>'#13#10'</g>'#13#10'<g>'#13#10'</g>'#13#10'<g>'#13#10'</g>'#13#10'<g>'#13#10'</' +
-            'g>'#13#10'<g>'#13#10'</g>'#13#10'<g>'#13#10'</g>'#13#10'<g>'#13#10'</g>'#13#10'<g>'#13#10'</g>'#13#10'<g>'#13#10'</g>'#13#10'</svg' +
-            '>'
-          ExplicitLeft = 274
-        end
-        object pnlParticlesLine: TPanel
           Left = 0
           Top = 49
           Width = 303
@@ -582,7 +482,7 @@ inherited frmMain: TfrmMain
           Align = alTop
           OnClick = pnlPathsAndEffectsClick
           TextSettings.Font.Size = 11.000000000000000000
-          TextSettings.FontColor = xFF9FA5A8
+          TextSettings.FontColor = xFFA0A0A1
           TextSettings.MaxLines = 1
           Words = <
             item
@@ -604,6 +504,7 @@ inherited frmMain: TfrmMain
           Align = alTop
           OnClick = pnlPathsAndEffectsClick
           TextSettings.Font.Weight = Medium
+          TextSettings.FontColor = xFF1B1B1B
           TextSettings.MaxLines = 2
           Words = <
             item
@@ -618,7 +519,7 @@ inherited frmMain: TfrmMain
           Height = 16
           Anchors = [akTop, akRight]
           OnClick = pnlPathsAndEffectsClick
-          Svg.Source = 
+          Svg.Source =
             '<?xml version="1.0" encoding="iso-8859-1"?>'#13#10'<!-- Generator: Ado' +
             'be Illustrator 19.0.0, SVG Export Plug-In . SVG Version: 6.00 Bu' +
             'ild 0)  -->'#13#10'<svg version="1.1" id="Capa_1" xmlns="http://www.w3' +
@@ -687,7 +588,7 @@ inherited frmMain: TfrmMain
           Align = alTop
           OnClick = pnlRuntimeEffectsClick
           TextSettings.Font.Size = 11.000000000000000000
-          TextSettings.FontColor = xFF9FA5A8
+          TextSettings.FontColor = xFFA0A0A1
           TextSettings.MaxLines = 1
           Words = <
             item
@@ -709,6 +610,7 @@ inherited frmMain: TfrmMain
           Align = alTop
           OnClick = pnlRuntimeEffectsClick
           TextSettings.Font.Weight = Medium
+          TextSettings.FontColor = xFF1B1B1B
           TextSettings.MaxLines = 2
           Words = <
             item
@@ -723,7 +625,7 @@ inherited frmMain: TfrmMain
           Height = 16
           Anchors = [akTop, akRight]
           OnClick = pnlRuntimeEffectsClick
-          Svg.Source = 
+          Svg.Source =
             '<?xml version="1.0" encoding="iso-8859-1"?>'#13#10'<!-- Generator: Ado' +
             'be Illustrator 19.0.0, SVG Export Plug-In . SVG Version: 6.00 Bu' +
             'ild 0)  -->'#13#10'<svg version="1.1" id="Capa_1" xmlns="http://www.w3' +
@@ -792,7 +694,7 @@ inherited frmMain: TfrmMain
           Align = alTop
           OnClick = pnlTextClick
           TextSettings.Font.Size = 11.000000000000000000
-          TextSettings.FontColor = xFF9FA5A8
+          TextSettings.FontColor = xFFA0A0A1
           TextSettings.MaxLines = 1
           Words = <
             item
@@ -814,6 +716,7 @@ inherited frmMain: TfrmMain
           Align = alTop
           OnClick = pnlTextClick
           TextSettings.Font.Weight = Medium
+          TextSettings.FontColor = xFF1B1B1B
           TextSettings.MaxLines = 2
           Words = <
             item
@@ -828,7 +731,7 @@ inherited frmMain: TfrmMain
           Height = 16
           Anchors = [akTop, akRight]
           OnClick = pnlTextClick
-          Svg.Source = 
+          Svg.Source =
             '<?xml version="1.0" encoding="iso-8859-1"?>'#13#10'<!-- Generator: Ado' +
             'be Illustrator 19.0.0, SVG Export Plug-In . SVG Version: 6.00 Bu' +
             'ild 0)  -->'#13#10'<svg version="1.1" id="Capa_1" xmlns="http://www.w3' +
@@ -897,7 +800,7 @@ inherited frmMain: TfrmMain
           Align = alTop
           OnClick = pnlUnicodeClick
           TextSettings.Font.Size = 11.000000000000000000
-          TextSettings.FontColor = xFF9FA5A8
+          TextSettings.FontColor = xFFA0A0A1
           TextSettings.MaxLines = 1
           Words = <
             item
@@ -919,6 +822,7 @@ inherited frmMain: TfrmMain
           Align = alTop
           OnClick = pnlUnicodeClick
           TextSettings.Font.Weight = Medium
+          TextSettings.FontColor = xFF1B1B1B
           TextSettings.MaxLines = 2
           Words = <
             item
@@ -934,7 +838,7 @@ inherited frmMain: TfrmMain
           ParentCustomHint = False
           Anchors = [akTop, akRight]
           OnClick = pnlUnicodeClick
-          Svg.Source = 
+          Svg.Source =
             '<?xml version="1.0" encoding="iso-8859-1"?>'#13#10'<!-- Generator: Ado' +
             'be Illustrator 19.0.0, SVG Export Plug-In . SVG Version: 6.00 Bu' +
             'ild 0)  -->'#13#10'<svg version="1.1" id="Capa_1" xmlns="http://www.w3' +
@@ -1003,7 +907,7 @@ inherited frmMain: TfrmMain
           Align = alTop
           OnClick = pnlTransformsClick
           TextSettings.Font.Size = 11.000000000000000000
-          TextSettings.FontColor = xFF9FA5A8
+          TextSettings.FontColor = xFFA0A0A1
           TextSettings.MaxLines = 1
           Words = <
             item
@@ -1025,6 +929,7 @@ inherited frmMain: TfrmMain
           Align = alTop
           OnClick = pnlTransformsClick
           TextSettings.Font.Weight = Medium
+          TextSettings.FontColor = xFF1B1B1B
           TextSettings.MaxLines = 2
           Words = <
             item
@@ -1040,7 +945,7 @@ inherited frmMain: TfrmMain
           ParentCustomHint = False
           Anchors = [akTop, akRight]
           OnClick = pnlTransformsClick
-          Svg.Source = 
+          Svg.Source =
             '<?xml version="1.0" encoding="iso-8859-1"?>'#13#10'<!-- Generator: Ado' +
             'be Illustrator 19.0.0, SVG Export Plug-In . SVG Version: 6.00 Bu' +
             'ild 0)  -->'#13#10'<svg version="1.1" id="Capa_1" xmlns="http://www.w3' +
@@ -1109,7 +1014,7 @@ inherited frmMain: TfrmMain
           Align = alTop
           OnClick = pnlFilterClick
           TextSettings.Font.Size = 11.000000000000000000
-          TextSettings.FontColor = xFF9FA5A8
+          TextSettings.FontColor = xFFA0A0A1
           TextSettings.MaxLines = 1
           Words = <
             item
@@ -1131,6 +1036,7 @@ inherited frmMain: TfrmMain
           Align = alTop
           OnClick = pnlFilterClick
           TextSettings.Font.Weight = Medium
+          TextSettings.FontColor = xFF1B1B1B
           TextSettings.MaxLines = 2
           Words = <
             item
@@ -1145,7 +1051,7 @@ inherited frmMain: TfrmMain
           Height = 16
           Anchors = [akTop, akRight]
           OnClick = pnlFilterClick
-          Svg.Source = 
+          Svg.Source =
             '<?xml version="1.0" encoding="iso-8859-1"?>'#13#10'<!-- Generator: Ado' +
             'be Illustrator 19.0.0, SVG Export Plug-In . SVG Version: 6.00 Bu' +
             'ild 0)  -->'#13#10'<svg version="1.1" id="Capa_1" xmlns="http://www.w3' +

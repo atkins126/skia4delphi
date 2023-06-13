@@ -3,10 +3,9 @@
 {                                                                        }
 {                              Skia4Delphi                               }
 {                                                                        }
-{ Copyright (c) 2011-2022 Google LLC.                                    }
-{ Copyright (c) 2021-2022 Skia4Delphi Project.                           }
+{ Copyright (c) 2021-2023 Skia4Delphi Project.                           }
 {                                                                        }
-{ Use of this source code is governed by a BSD-style license that can be }
+{ Use of this source code is governed by the MIT license that can be     }
 { found in the LICENSE file.                                             }
 {                                                                        }
 {************************************************************************}
@@ -39,13 +38,13 @@
 {************************************************************************}
 {                                                                        }
 { Example of command line to install in silent mode:                     }
-{   cmd /C ""Skia4Delphi_3.4.1_Setup.exe" /DIR="C:\Skia4Delphi" /SILENT  }
+{   cmd /C ""Skia4Delphi_6.0.0-beta1_Setup.exe" /DIR="C:\Skia4Delphi" /SILENT  }
 {     /RADStudioVersions=all"                                            }
 {                                                                        }
 { In GetIt implementation, the installation command could be:            }
-{   cmd /C ""$(BDSCatalogRepository)\Skia4Delphi-3.4.1\                  }
-{     Skia4Delphi_3.4.1_Setup.exe"                                       }
-{     /DIR="$(BDSCatalogRepository)\Skia4Delphi-3.4.1" /VERYSILENT       }
+{   cmd /C ""$(BDSCatalogRepository)\Skia4Delphi-6.0.0-beta1\                  }
+{     Skia4Delphi_6.0.0-beta1_Setup.exe"                                       }
+{     /DIR="$(BDSCatalogRepository)\Skia4Delphi-6.0.0-beta1" /VERYSILENT       }
 {     /RADStudioVersions=$(ProductVersion) /CreateUninstallRegKey=no"    }
 {                                                                        }
 { Example of command line to uninstall in silent mode:                   }
@@ -53,15 +52,15 @@
 {     /RADStudioVersions=all"                                            }
 {                                                                        }
 { In GetIt implementation, the uninstall command could be:               }
-{   cmd /C ""$(BDSCatalogRepository)\Skia4Delphi-3.4.1\unins000.exe"     }
+{   cmd /C ""$(BDSCatalogRepository)\Skia4Delphi-6.0.0-beta1\unins000.exe"     }
 {     /VERYSILENT /RADStudioVersions=$(ProductVersion)"                  }
 {                                                                        }
 {************************************************************************}
 
 #define LibraryName "Skia4Delphi"
-#define LibraryVersion "3.4.1"
+#define LibraryVersion "6.0.0-beta1"
 #define LibraryPublisher "Skia4Delphi Team"
-#define LibraryCopyright "Copyright (c) 2021-2022 Skia4Delphi Project"
+#define LibraryCopyright "Copyright (c) 2021-2023 Skia4Delphi Project"
 #define LibraryURL "https://skia4delphi.org"
 #define LibrarySamplesFolder "Samples"
 #define LibraryPackagesFolder "Packages"
@@ -170,7 +169,8 @@ Name: "ukrainian"; MessagesFile: "compiler:Languages\Ukrainian.isl,Languages\Def
   [Files]
     Source: "Style\*"; DestDir: "{app}\{#SetupFolder}\Style"; Flags: ignoreversion
     Source: "..\..\{#LibraryPackagesFolder}\*"; Excludes: "{#CommonRADStudioFilesExcludes}"; DestDir: "{app}\{#LibraryPackagesFolder}"; Flags: recursesubdirs ignoreversion
-    Source: "..\..\*"; Excludes: "{#CommonRADStudioFilesExcludes},*.gitattributes,*.gitignore,*.gitmodules,README.md,\.github\*,\Assets\Artwork\*,\Assets\Documents\*,\Assets\Setup\*,Binary\*,\Documents\*,\Externals\*,\{#LibraryDCUFolder}\*,Logs\*,*.Logs.txt,Objects\*,\{#SetupFolder}\*,\Tools\Chocolatey Package\*,\{#LibraryPackagesFolder}\*"; DestDir: "{app}"; Flags: recursesubdirs ignoreversion
+    Source: "..\..\*"; Excludes: "{#CommonRADStudioFilesExcludes},*.gitattributes,*.gitignore,*.gitmodules,README.md,\.github\*,\.history\*,\Assets\Artwork\*,\Assets\Documents\*,\Assets\Setup\*,Binary\*,\Documents\*,\Externals\*,\{#LibraryDCUFolder}\*,Logs\*,*.Logs.txt,Objects\*,\{#SetupFolder}\*,\Tools\Chocolatey Package\*,\{#LibraryPackagesFolder}\*"; DestDir: "{app}"; Flags: recursesubdirs ignoreversion
+    Source: "..\..\Samples\*.template.xml"; DestDir: "{app}\Samples"; Flags: recursesubdirs ignoreversion
     Source: "..\..\Binary\*"; DestDir: "{app}\Binary"; Flags: recursesubdirs ignoreversion
     #ifdef UseLibraryDCUFolder
       Source: "..\..\{#LibraryDCUFolder}\*"; DestDir: "{app}\{#LibraryDCUFolder}"; Flags: recursesubdirs ignoreversion dontcopy

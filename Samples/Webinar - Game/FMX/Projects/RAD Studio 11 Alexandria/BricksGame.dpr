@@ -4,15 +4,13 @@ uses
   System.StartUpCopy,
   FMX.Forms,
   FMX.Types,
-  Skia.FMX,
+  FMX.Skia,
   Sample.Form.Main in '..\..\Source\Sample.Form.Main.pas' {frmMain};
 
 {$R *.res}
 
 begin
-  {$IFDEF MACOS}
   GlobalUseMetal := True;
-  {$ENDIF}
   GlobalUseSkia := True;
   GlobalUseSkiaRasterWhenAvailable := False;
   Application.Initialize;

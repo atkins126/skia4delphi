@@ -2,10 +2,9 @@
 {                                                                        }
 {                              Skia4Delphi                               }
 {                                                                        }
-{ Copyright (c) 2011-2022 Google LLC.                                    }
-{ Copyright (c) 2021-2022 Skia4Delphi Project.                           }
+{ Copyright (c) 2021-2023 Skia4Delphi Project.                           }
 {                                                                        }
-{ Use of this source code is governed by a BSD-style license that can be }
+{ Use of this source code is governed by the MIT license that can be     }
 { found in the LICENSE file.                                             }
 {                                                                        }
 {************************************************************************}
@@ -39,7 +38,7 @@ package Skia.Package.VCL.Designtime;
 {$DESCRIPTION 'Skia4Delphi VCL Designtime package'}
 {$LIBSUFFIX '210'}
 {$DESIGNONLY}
-{$IMPLICITBUILD ON}
+{$IMPLICITBUILD OFF}
 
 requires
   rtl,
@@ -50,9 +49,9 @@ requires
   Skia.Package.VCL;
 
 contains
-  Skia.Vcl.Designtime.Editor.AnimatedImage in '..\..\Source\VCL\Designtime\Skia.Vcl.Designtime.Editor.AnimatedImage.pas' {SkAnimatedImageEditorForm},
-  Skia.Vcl.Designtime.Editor.Svg in '..\..\Source\VCL\Designtime\Skia.Vcl.Designtime.Editor.Svg.pas' {SKSvgEditorForm},
-  Skia.Vcl.Designtime in '..\..\Source\VCL\Designtime\Skia.Vcl.Designtime.pas',
-  Skia.Vcl.Designtime.ProjectMenu in '..\..\Source\VCL\Designtime\Skia.Vcl.Designtime.ProjectMenu.pas';
+  Vcl.Skia.Designtime.Editor.AnimatedImage in '..\..\Source\VCL\Designtime\Vcl.Skia.Designtime.Editor.AnimatedImage.pas' {SkAnimatedImageEditorForm},
+  Vcl.Skia.Designtime.Editor.SVG in '..\..\Source\VCL\Designtime\Vcl.Skia.Designtime.Editor.SVG.pas' {SKSvgEditorForm},
+  Vcl.Skia.Designtime in '..\..\Source\VCL\Designtime\Vcl.Skia.Designtime.pas',
+  Vcl.Skia.Designtime.ProjectMenu in '..\..\Source\VCL\Designtime\Vcl.Skia.Designtime.ProjectMenu.pas';
 
 end.

@@ -2,10 +2,9 @@
 {                                                                        }
 {                              Skia4Delphi                               }
 {                                                                        }
-{ Copyright (c) 2011-2022 Google LLC.                                    }
-{ Copyright (c) 2021-2022 Skia4Delphi Project.                           }
+{ Copyright (c) 2021-2023 Skia4Delphi Project.                           }
 {                                                                        }
-{ Use of this source code is governed by a BSD-style license that can be }
+{ Use of this source code is governed by the MIT license that can be     }
 { found in the LICENSE file.                                             }
 {                                                                        }
 {************************************************************************}
@@ -22,7 +21,7 @@ uses
   FMX.WebBrowser, FMX.Controls.Presentation,
 
   { Skia }
-  Skia, Skia.FMX,
+  System.Skia, FMX.Skia,
 
   { Sample }
   Sample.Form.Base.Viewer;
@@ -40,7 +39,8 @@ implementation
 uses
   { Delphi }
   Winapi.Windows,
-  Winapi.ShellAPI;
+  Winapi.ShellAPI,
+  System.IOUtils;
 {$ELSEIF defined(LINUX)}
 uses
   { Delphi }
@@ -100,7 +100,7 @@ end;
 {$ELSE}
 begin
   {$IFDEF MSWINDOWS}
-  AFileName := 'file://' + AFileName.Replace('\', '/');
+  AFileName := 'file://' + TPath.GetFullPath(AFileName).Replace('\', '/');
   ShellExecute(0, 'open', PChar(AFileName), nil, nil, SW_SHOWNORMAL);
   {$ELSEIF defined(LINUX)}
   _system(PAnsiChar('xdg-open "' + AnsiString(AFileName) + '"'));

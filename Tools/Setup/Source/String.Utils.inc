@@ -6,10 +6,9 @@
 {                                                                        }
 {                              Skia4Delphi                               }
 {                                                                        }
-{ Copyright (c) 2011-2022 Google LLC.                                    }
-{ Copyright (c) 2021-2022 Skia4Delphi Project.                           }
+{ Copyright (c) 2021-2023 Skia4Delphi Project.                           }
 {                                                                        }
-{ Use of this source code is governed by a BSD-style license that can be }
+{ Use of this source code is governed by the MIT license that can be     }
 { found in the LICENSE file.                                             }
 {                                                                        }
 {************************************************************************}
@@ -17,18 +16,22 @@
 
 // interface
 
-/// <summary> Add an string to the array </summary>
+/// <summary> Add a string to the array </summary>
 function AppendString(const AStrings: TArrayOfString; const ANewString: string; const AAllowDuplicates: Boolean): TArrayOfString; forward;
 /// <summary> Convert booleans to string in word format (True or False) </summary>
 function BoolToStr(const AValue: Boolean): string; forward;
+/// <summary> Check if a string contains in an array of strings </summary>
+function ContainsString(const AStrings: TArrayOfString; const AValue: string; const ACaseSensitive: Boolean): Boolean; forward;
 /// <summary> Check if one text ends with another text with case insentive comparison </summary>
 function EndsWithText(const AText, ASubText: string): Boolean; forward;
-/// <summary> Insert an string to the array at index 0 </summary>
+/// <summary> Insert a string to the array at index 0 </summary>
 function InsertStringAtBeginning(const AStrings: TArrayOfString; const ANewString: string): TArrayOfString; forward;
 /// <summary> Concatenates strings into one, separating each string by a delimiter </summary>
 function JoinStrings(const AStrings: TArrayOfString; const ADelimiter: string; const AJoinEmptyStrings: Boolean): string; forward;
 /// <summary> Remove all matches of a string in an array </summary>
 function RemoveString(const AStrings: TArrayOfString; const AValue: string; const ACaseSensitive: Boolean): TArrayOfString; forward;
+/// <summary> Replace all matches of a string in an array </summary>
+function ReplaceString(const AStrings: TArrayOfString; const AOldValue, ANewValue: string; const ACaseSensitive, AWholeLine: Boolean): TArrayOfString; forward;
 /// <summary> Break a string into an array of substrings </summary>
 function SplitString(AText: string; const ADelimiter: string): TArrayOfString; forward;
 /// <summary> Check if one text starts with another text with case insentive comparison </summary>
@@ -39,26 +42,40 @@ function StrToBoolDef(const AValue: string; const ADefault: Boolean): Boolean; f
 // implementation
 
 function AppendString(const AStrings: TArrayOfString; const ANewString: string; const AAllowDuplicates: Boolean): TArrayOfString;
-var
-  I: Integer;
 begin
   Result := AStrings;
-  if not AAllowDuplicates then
-  begin
-    for I := 0  to GetArrayLength(AStrings) - 1 do
-      if SameText(AStrings[I], ANewString) then
-        Exit;
-  end;
+  if (not AAllowDuplicates) and ContainsString(AStrings, ANewString, False) then
+    Exit;
   SetArrayLength(Result, GetArrayLength(Result) + 1);
   Result[GetArrayLength(Result) - 1] := ANewString;
 end;
 
 function BoolToStr(const AValue: Boolean): string;
 begin
-if AValue then
-  Result := 'True'
-else
-  Result := 'False';
+  if AValue then
+    Result := 'True'
+  else
+    Result := 'False';
+end;
+
+function ContainsString(const AStrings: TArrayOfString; const AValue: string; const ACaseSensitive: Boolean): Boolean;
+var
+  I: Integer;
+begin
+  Result := True;
+  if ACaseSensitive then
+  begin
+    for I := 0  to GetArrayLength(AStrings) - 1 do
+      if AStrings[I] = AValue then
+        Exit;
+  end
+  else
+  begin
+    for I := 0  to GetArrayLength(AStrings) - 1 do
+      if SameText(AStrings[I], AValue) then
+        Exit;
+  end;
+  Result := False;
 end;
 
 function EndsWithText(const AText, ASubText: string): Boolean;
@@ -128,6 +145,65 @@ begin
       LString := AStrings[I];
       if not SameText(LString, AValue) then
         Result := AppendString(Result, LString, True);
+    end;
+end;
+
+function ReplaceString(const AStrings: TArrayOfString; const AOldValue, ANewValue: string; const ACaseSensitive, AWholeLine: Boolean): TArrayOfString;
+var
+  LIndex: Integer;
+  LString: string;
+  I: Integer;
+begin
+  Result := [];
+  if ACaseSensitive then
+  begin
+    if AWholeLine then
+    begin
+      for I := 0 to GetArrayLength(AStrings) - 1 do
+      begin
+        LString := AStrings[I];
+        if LString = AOldValue then
+          Result := AppendString(Result, ANewValue, True)
+        else
+          Result := AppendString(Result, LString, True);
+      end;
+    end
+    else
+    begin
+      for I := 0 to GetArrayLength(AStrings) - 1 do
+      begin
+        LString := AStrings[I];
+        LIndex := Pos(AOldValue, LString);
+        if LIndex > 0 then   
+          Result := AppendString(Result, Copy(LString, 1, LIndex - 1) + ANewValue + Copy(LString, LIndex + Length(AOldValue), Length(LString)), True)
+        else
+          Result := AppendString(Result, LString, True);
+      end;
+    end;
+  end
+  else
+    if AWholeLine then
+    begin
+      for I := 0 to GetArrayLength(AStrings) - 1 do
+      begin
+        LString := AStrings[I];
+        if SameText(LString, AOldValue) then
+          Result := AppendString(Result, ANewValue, True)
+        else
+          Result := AppendString(Result, LString, True);
+      end;
+    end
+    else
+    begin   
+      for I := 0 to GetArrayLength(AStrings) - 1 do
+      begin
+        LString := AStrings[I];
+        LIndex := Pos(AnsiLowercase(AOldValue), AnsiLowercase(LString));
+        if LIndex > 0 then
+          Result := AppendString(Result, Copy(LString, 1, LIndex - 1) + ANewValue + Copy(LString, LIndex + Length(AOldValue), Length(LString)), True)
+        else
+          Result := AppendString(Result, LString, True);
+      end;
     end;
 end;
 

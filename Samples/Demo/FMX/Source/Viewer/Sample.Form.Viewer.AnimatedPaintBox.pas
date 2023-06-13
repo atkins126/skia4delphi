@@ -2,10 +2,9 @@
 {                                                                        }
 {                              Skia4Delphi                               }
 {                                                                        }
-{ Copyright (c) 2011-2022 Google LLC.                                    }
-{ Copyright (c) 2021-2022 Skia4Delphi Project.                           }
+{ Copyright (c) 2021-2023 Skia4Delphi Project.                           }
 {                                                                        }
-{ Use of this source code is governed by a BSD-style license that can be }
+{ Use of this source code is governed by the MIT license that can be     }
 { found in the LICENSE file.                                             }
 {                                                                        }
 {************************************************************************}
@@ -19,9 +18,10 @@ uses
   { Delphi }
   System.SysUtils, System.Types, System.UITypes, System.Classes, FMX.Types,
   FMX.Controls, FMX.Forms, FMX.StdCtrls, FMX.Layouts, FMX.Objects,
+  FMX.Controls.Presentation,
 
   { Skia }
-  Skia, Skia.FMX,
+  System.Skia, FMX.Skia,
 
   { Sample }
   Sample.Form.Base.Viewer;
@@ -59,7 +59,7 @@ procedure TfrmAnimatedPaintBoxViewer.apbDrawAnimationDraw(ASender: TObject;
   const AOpacity: Single);
 begin
   if Assigned(FDrawProc) then
-    FDrawProc(ACanvas, ADest, AProgress * apbDraw.Duration);
+    FDrawProc(ACanvas, ADest, apbDraw.Animation.CurrentTime);
 end;
 
 procedure TfrmAnimatedPaintBoxViewer.apbDrawMouseMove(Sender: TObject;
@@ -75,7 +75,7 @@ begin
   inherited;
   if Action <> TCloseAction.caNone then
   begin
-    apbDraw.Animate := False;
+    apbDraw.Animation.StopAtCurrent;
     FDrawProc := nil;
     FOnMouseMove := nil;
   end;
@@ -98,7 +98,7 @@ begin
   FDrawProc := ADrawProc;
   apbDraw.Align := TAlignLayout.Client;
   apbDraw.Redraw;
-  apbDraw.Animate := True;
+  apbDraw.Animation.Enabled := True;
   AllowScrollBoundsAnimation := not Assigned(FOnMouseMove);
   inherited Show(ATitle, ADescription);
 end;
@@ -112,7 +112,7 @@ begin
   apbDraw.Align := TAlignLayout.None;
   DrawSize := TSizeF.Create(ADrawWidth, ADrawHeight);
   apbDraw.Redraw;
-  apbDraw.Animate := True;
+  apbDraw.Animation.Enabled := True;
   AllowScrollBoundsAnimation := not Assigned(FOnMouseMove);
   inherited Show(ATitle, ADescription);
 end;

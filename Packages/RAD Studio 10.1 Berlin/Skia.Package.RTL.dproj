@@ -1,8 +1,7 @@
 ﻿<!--
- Copyright (c) 2011-2022 Google LLC.
- Copyright (c) 2021-2022 Skia4Delphi Project.
+ Copyright (c) 2021-2023 Skia4Delphi Project.
 
- Use of this source code is governed by a BSD-style license that can be
+ Use of this source code is governed by the MIT license that can be
  found in the LICENSE file.
 -->
 <Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
@@ -49,12 +48,13 @@
     <PropertyGroup Condition="'$(Base)'!=''">
         <SanitizedProjectName>Skia_Package_RTL</SanitizedProjectName>
         <DCC_BplOutput>..\..\Library\RAD Studio 10.1 Berlin\$(Platform)\$(Config)\Bpl</DCC_BplOutput>
-        <DCC_CBuilderOutput>All</DCC_CBuilderOutput>
+        <DCC_HppOutput>..\..\Library\RAD Studio 10.1 Berlin\$(Platform)\Include</DCC_HppOutput>
         <DCC_DcpOutput>..\..\Library\RAD Studio 10.1 Berlin\$(Platform)\$(Config)</DCC_DcpOutput>
         <DCC_DcuOutput>..\..\Library\RAD Studio 10.1 Berlin\$(Platform)\$(Config)</DCC_DcuOutput>
         <DCC_Description>Skia4Delphi RTL package</DCC_Description>
         <DCC_ExeOutput>.\$(Platform)\$(Config)</DCC_ExeOutput>
         <DCC_Namespace>System;Xml;Data;Datasnap;Web;Soap;$(DCC_Namespace)</DCC_Namespace>
+        <DCC_OutputNeverBuildDcps>true</DCC_OutputNeverBuildDcps>
         <DllSuffix>240</DllSuffix>
         <GenDll>true</GenDll>
         <GenPackage>true</GenPackage>
@@ -100,9 +100,8 @@
             <MainSource>MainSource</MainSource>
         </DelphiCompile>
         <DCCReference Include="rtl.dcp"/>
-        <DCCReference Include="..\..\Source\Skia.API.pas"/>
-        <DCCReference Include="..\..\Source\Skia.Bindings.pas"/>
-        <DCCReference Include="..\..\Source\Skia.pas"/>
+        <DCCReference Include="..\..\Source\System.Skia.API.pas"/>
+        <DCCReference Include="..\..\Source\System.Skia.pas"/>
         <BuildConfiguration Include="Base">
             <Key>Base</Key>
         </BuildConfiguration>

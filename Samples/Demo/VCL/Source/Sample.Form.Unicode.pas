@@ -2,10 +2,9 @@
 {                                                                        }
 {                              Skia4Delphi                               }
 {                                                                        }
-{ Copyright (c) 2011-2022 Google LLC.                                    }
-{ Copyright (c) 2021-2022 Skia4Delphi Project.                           }
+{ Copyright (c) 2021-2023 Skia4Delphi Project.                           }
 {                                                                        }
-{ Use of this source code is governed by a BSD-style license that can be }
+{ Use of this source code is governed by the MIT license that can be     }
 { found in the LICENSE file.                                             }
 {                                                                        }
 {************************************************************************}
@@ -21,7 +20,7 @@ uses
   Vcl.ExtCtrls,
 
   { Skia }
-  Skia, Skia.Vcl,
+  System.Skia, Vcl.Skia,
 
   { Sample }
   Sample.Form.Base;
@@ -61,7 +60,7 @@ var
   LRegionText: string;
 begin
   LRegionText := AText.Substring(AStartIndex, AEndIndex - AStartIndex);
-  ABiDiRegionDescription := ABiDiRegionDescription + #10 + Format('  "%s"  - %s', [LRegionText, BiDiKind[AIsRTL]]);
+  ABiDiRegionDescription := ABiDiRegionDescription + sLineBreak + Format('  "%s"  - %s', [LRegionText, BiDiKind[AIsRTL]]);
 end;
 
 procedure TfrmUnicode.pnlBiDiIteratorClick(Sender: TObject);
@@ -101,7 +100,7 @@ begin
   begin
     if not Result.IsEmpty then
       Result := Result + ' ';
-    Result := Result + '$' + InttoHex(Ord(LChar), 4);
+    Result := Result + '$' + IntToHex(Ord(LChar), 4);
   end;
 end;
 
@@ -117,7 +116,7 @@ begin
   LUnicode := TSkUnicode.Create;
   for LGrapheme in LUnicode.GetBreaks(Text, TSkBreakType.Graphemes) do
   begin
-    LGraphemesDescription := LGraphemesDescription + #10 +
+    LGraphemesDescription := LGraphemesDescription + sLineBreak +
       Format('  %s  - %d Char - %s', [LGrapheme, Length(LGrapheme), StringHexadecimal(LGrapheme)]);
   end;
   ChildForm<TfrmUnicodeGraphemesViewer>.Show('Graphemes Iterator', 'Grapheme is the single displayed character (like one emoji, one letter).',

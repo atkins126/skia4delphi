@@ -2,10 +2,9 @@
 {                                                                        }
 {                              Skia4Delphi                               }
 {                                                                        }
-{ Copyright (c) 2011-2022 Google LLC.                                    }
-{ Copyright (c) 2021-2022 Skia4Delphi Project.                           }
+{ Copyright (c) 2021-2023 Skia4Delphi Project.                           }
 {                                                                        }
-{ Use of this source code is governed by a BSD-style license that can be }
+{ Use of this source code is governed by the MIT license that can be     }
 { found in the LICENSE file.                                             }
 {                                                                        }
 {************************************************************************}
@@ -21,7 +20,7 @@ uses
   Vcl.Controls, Vcl.Forms, Vcl.ExtCtrls,
 
   { Skia }
-  Skia, Skia.Vcl,
+  System.Skia, Vcl.Skia,
 
   { Sample }
   Sample.Form.Base;
@@ -164,22 +163,22 @@ begin
 
       LTextStyle := TSkTextStyle.Create;
       LTextStyle.Color := TAlphaColors.Black;
-      LTextStyle.SetFontSize(28);
-      LTextStyle.SetFontStyle(TSkFontStyle.Create(TSkFontWeight.Light, TSkFontWidth.Normal, TSkFontSlant.Upright));
+      LTextStyle.FontSize := 28;
+      LTextStyle.FontStyle := TSkFontStyle.Create(TSkFontWeight.Light, TSkFontWidth.Normal, TSkFontSlant.Upright);
       LBuilder.PushStyle(LTextStyle);
       LBuilder.AddText('English English 字典 字典 😀😅😂😂');
 
       LTextStyle := TSkTextStyle.Create;
       LTextStyle.Color := TAlphaColors.Crimson;
-      LTextStyle.SetFontSize(22);
-      LTextStyle.SetFontStyle(TSkFontStyle.Create(TSkFontWeight.SemiBold, TSkFontWidth.Normal, TSkFontSlant.Upright));
+      LTextStyle.FontSize := 22;
+      LTextStyle.FontStyle := TSkFontStyle.Create(TSkFontWeight.SemiBold, TSkFontWidth.Normal, TSkFontSlant.Upright);
       LBuilder.PushStyle(LTextStyle);
       LBuilder.AddText(' !سلام دنیا');
 
       LTextStyle := TSkTextStyle.Create;
       LTextStyle.Color := TAlphaColors.Blueviolet;
-      LTextStyle.SetFontSize(30);
-      LTextStyle.SetFontStyle(TSkFontStyle.Create(TSkFontWeight.ExtraBold, TSkFontWidth.Normal, TSkFontSlant.Italic));
+      LTextStyle.FontSize := 30;
+      LTextStyle.FontStyle := TSkFontStyle.Create(TSkFontWeight.ExtraBold, TSkFontWidth.Normal, TSkFontSlant.Italic);
       LBuilder.PushStyle(LTextStyle);
       LBuilder.AddText(' World domination is such an ugly phrase - I prefer to call it world optimisation.');
 
@@ -207,22 +206,22 @@ begin
 
       LTextStyle := TSkTextStyle.Create;
       LTextStyle.Color := TAlphaColors.Black;
-      LTextStyle.SetFontSize(28);
-      LTextStyle.SetFontStyle(TSkFontStyle.Create(TSkFontWeight.Light, TSkFontWidth.Normal, TSkFontSlant.Upright));
+      LTextStyle.FontSize := 28;
+      LTextStyle.FontStyle := TSkFontStyle.Create(TSkFontWeight.Light, TSkFontWidth.Normal, TSkFontSlant.Upright);
       LBuilder.PushStyle(LTextStyle);
       LBuilder.AddText('English English 字典 字典');
 
       LTextStyle := TSkTextStyle.Create;
       LTextStyle.Color := TAlphaColors.Crimson;
-      LTextStyle.SetFontSize(22);
-      LTextStyle.SetFontStyle(TSkFontStyle.Create(TSkFontWeight.SemiBold, TSkFontWidth.Normal, TSkFontSlant.Upright));
+      LTextStyle.FontSize := 22;
+      LTextStyle.FontStyle := TSkFontStyle.Create(TSkFontWeight.SemiBold, TSkFontWidth.Normal, TSkFontSlant.Upright);
       LBuilder.PushStyle(LTextStyle);
       LBuilder.AddText(' !سلام دنیا');
 
       LTextStyle := TSkTextStyle.Create;
       LTextStyle.Color := TAlphaColors.Blueviolet;
-      LTextStyle.SetFontSize(30);
-      LTextStyle.SetFontStyle(TSkFontStyle.Create(TSkFontWeight.ExtraBold, TSkFontWidth.Normal, TSkFontSlant.Italic));
+      LTextStyle.FontSize := 30;
+      LTextStyle.FontStyle := TSkFontStyle.Create(TSkFontWeight.ExtraBold, TSkFontWidth.Normal, TSkFontSlant.Italic);
       LBuilder.PushStyle(LTextStyle);
       LBuilder.AddText(' World domination is such an ugly phrase - I prefer to call it world optimisation.');
 

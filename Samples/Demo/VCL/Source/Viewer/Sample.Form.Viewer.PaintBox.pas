@@ -2,10 +2,9 @@
 {                                                                        }
 {                              Skia4Delphi                               }
 {                                                                        }
-{ Copyright (c) 2011-2022 Google LLC.                                    }
-{ Copyright (c) 2021-2022 Skia4Delphi Project.                           }
+{ Copyright (c) 2021-2023 Skia4Delphi Project.                           }
 {                                                                        }
-{ Use of this source code is governed by a BSD-style license that can be }
+{ Use of this source code is governed by the MIT license that can be     }
 { found in the LICENSE file.                                             }
 {                                                                        }
 {************************************************************************}
@@ -20,7 +19,7 @@ uses
   System.Classes, System.Types, Vcl.Graphics, Vcl.Controls, Vcl.Forms, Vcl.ExtCtrls,
 
   { Skia }
-  Skia, Skia.Vcl,
+  System.Skia, Vcl.Skia,
 
   { Sample }
   Sample.Form.Base.Viewer;
@@ -93,7 +92,7 @@ begin
   if Assigned(FOnMouseDown) then
   begin
     LShouldRedraw := False;
-    FOnMouseDown(PointF(X, Y), LShouldRedraw);
+    FOnMouseDown(PointF(X, Y) / pbxDraw.ScaleFactor, LShouldRedraw);
     if LShouldRedraw then
       pbxDraw.Redraw;
   end;
@@ -108,7 +107,7 @@ begin
   if Assigned(FOnMouseMove) then
   begin
     LShouldRedraw := False;
-    FOnMouseMove(PointF(X, Y), FIsMouseDown, LShouldRedraw);
+    FOnMouseMove(PointF(X, Y) / pbxDraw.ScaleFactor, FIsMouseDown, LShouldRedraw);
     if LShouldRedraw then
       pbxDraw.Redraw;
   end;
@@ -123,7 +122,7 @@ begin
   if FIsMouseDown and Assigned(FOnMouseUp) then
   begin
     LShouldRedraw := False;
-    FOnMouseUp(PointF(X, Y), LShouldRedraw);
+    FOnMouseUp(PointF(X, Y) / pbxDraw.ScaleFactor, LShouldRedraw);
     if LShouldRedraw then
       pbxDraw.Redraw;
   end;

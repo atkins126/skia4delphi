@@ -2,10 +2,9 @@
 {                                                                        }
 {                              Skia4Delphi                               }
 {                                                                        }
-{ Copyright (c) 2011-2022 Google LLC.                                    }
-{ Copyright (c) 2021-2022 Skia4Delphi Project.                           }
+{ Copyright (c) 2021-2023 Skia4Delphi Project.                           }
 {                                                                        }
-{ Use of this source code is governed by a BSD-style license that can be }
+{ Use of this source code is governed by the MIT license that can be     }
 { found in the LICENSE file.                                             }
 {                                                                        }
 {************************************************************************}
@@ -21,7 +20,7 @@ uses
   DUnitX.TestFramework,
 
   { Skia }
-  Skia,
+  System.Skia,
 
   { Tests }
   Skia.Tests.Foundation;
@@ -31,8 +30,6 @@ type
 
   [TestFixture]
   TSkUnicodeTests = class(TTestBase)
-  protected
-    function AssetsPath: string; override;
   public
     [Test]
     procedure TestBiDiRegion;
@@ -63,11 +60,6 @@ begin
       Result := Result + ', ';
     Result := Result + '$' + InttoHex(Ord(LChar), 4);
   end;
-end;
-
-function TSkUnicodeTests.AssetsPath: string;
-begin
-  Result := CombinePaths(inherited AssetsPath, 'Unicode');
 end;
 
 procedure TSkUnicodeTests.TestBiDiRegion;

@@ -2,10 +2,9 @@
 {                                                                        }
 {                              Skia4Delphi                               }
 {                                                                        }
-{ Copyright (c) 2011-2022 Google LLC.                                    }
-{ Copyright (c) 2021-2022 Skia4Delphi Project.                           }
+{ Copyright (c) 2021-2023 Skia4Delphi Project.                           }
 {                                                                        }
-{ Use of this source code is governed by a BSD-style license that can be }
+{ Use of this source code is governed by the MIT license that can be     }
 { found in the LICENSE file.                                             }
 {                                                                        }
 {************************************************************************}
@@ -39,14 +38,14 @@ package Skia.Package.RTL;
 {$DESCRIPTION 'Skia4Delphi RTL package'}
 {$LIBSUFFIX '250'}
 {$RUNONLY}
-{$IMPLICITBUILD ON}
+{$IMPLICITBUILD OFF}
+{$HPPEMIT NOUSINGNAMESPACE}
 
 requires
   rtl;
 
 contains
-  Skia.API in '..\..\Source\Skia.API.pas',
-  Skia.Bindings in '..\..\Source\Skia.Bindings.pas',
-  Skia in '..\..\Source\Skia.pas';
+  System.Skia.API in '..\..\Source\System.Skia.API.pas',
+  System.Skia in '..\..\Source\System.Skia.pas';
 
 end.

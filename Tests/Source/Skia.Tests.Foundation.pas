@@ -2,10 +2,9 @@
 {                                                                        }
 {                              Skia4Delphi                               }
 {                                                                        }
-{ Copyright (c) 2011-2022 Google LLC.                                    }
-{ Copyright (c) 2021-2022 Skia4Delphi Project.                           }
+{ Copyright (c) 2021-2023 Skia4Delphi Project.                           }
 {                                                                        }
-{ Use of this source code is governed by a BSD-style license that can be }
+{ Use of this source code is governed by the MIT license that can be     }
 { found in the LICENSE file.                                             }
 {                                                                        }
 {************************************************************************}
@@ -21,16 +20,22 @@ uses
   System.Classes,
   System.Math,
   System.Math.Vectors,
+  System.IOUtils,
+  System.Types,
   DUnitX.TestFramework,
   DUnitX.Assert,
 
   { Skia }
-  Skia;
+  System.Skia;
 
 type
+  TOnImageCheckingProc = reference to procedure(const AImage: ISkImage);
+
   { TTestBase }
 
   TTestBase = class
+  strict private
+    FAssetsPathCreated: Boolean;
   strict protected
     const
       DefaultFontFamily = 'Segoe UI';
@@ -40,13 +45,14 @@ type
     function FontAssetsPath: string;
     function FontProvider: ISkTypefaceFontProvider;
     function ImageAssetsPath: string;
+    function SvgAssetsPath: string;
     procedure RegisterFontFiles(const AFontProvider: ISkTypefaceFontProvider);
-    function RootAssetsPath: string;
   public
     [Setup]
     procedure Setup; virtual;
     [TearDown]
     procedure TearDown; virtual;
+    class function RootAssetsPath: string; static;
   end;
 
   { TAssertHelper }
@@ -59,14 +65,20 @@ type
     SBytesHashNotEqual = 'Bytes hashes are not equal. Expected %u but got %u. %s';
     SBytesValuesEqual = 'Bytes values are equal. ';
     SBytesValuesNotEqual = 'Bytes values are not equal. ';
-    SImagesPixelsNotEqual = 'Are equal pixels. ';
+    SImagesPixelsNotEqual = 'Are not equal pixels. ';
+    SPixelsNotEqual = 'Are not equal pixels. ';
     SStreamHashNotEqual = 'Stream hashes are not equal. Expected %u but got %u. %s';
     SStringHashNotEqual = 'String hashes are not equal. Expected %u but got %u. %s';
     SImagesNotSimilar = 'Images are not similar. Expected at least %g but got %g (hash: %s). %s';
-  strict private
+  strict private class var
+    FOnImageChecking: TOnImageCheckingProc;
+  private
     class function AreSameArray<T>(const ALeft, ARight: TArray<T>): Boolean; static; inline;
     class function AreSamePixels(const AExpectedEncodedImage, AActualEncodedImage: TBytes): Boolean; static;
-  strict protected
+    class procedure DoImageChecking(const AImage: ISkImage); overload; static;
+    class procedure DoImageChecking(const AImageCodec: ISkCodec); overload; static;
+    class procedure DoImageChecking(const AImagePixmap: ISkPixmap); overload; static;
+  protected
     class function GetPixmapBytes(const APixmap: ISkPixmap): TBytes; static;
   public
     class procedure AreEqualArray<T>(const AExpected, AActual: TArray<T>; const AMessage: string = '');
@@ -76,13 +88,27 @@ type
     class procedure AreEqualCRC32(const AExpected: Cardinal; const AActual: string; const AMessage: string = ''); overload;
     class procedure AreEqualCRC32(const AExpected: Cardinal; const AActual: ISkImage; const AMessage: string = ''); overload;
     class procedure AreEqualCRC32(const AExpected: Cardinal; const AActual: ISkCodec; const AMessage: string = ''); overload;
-    class procedure AreEqualPixels(const AExpectedEncodedImage, AActualEncodedImage: TBytes; const AMessage: string = '');
+    class procedure AreEqualCRC32(const AExpected: Cardinal; const AActual: ISkPixmap; const AMessage: string = ''); overload;
+    class procedure AreEqualPixels(const AExpectedEncodedImage, AActualEncodedImage: TBytes; const AMessage: string = ''); overload;
+    class procedure AreEqualPixels(const AExpected, AActual: ISkPixmap; const AMessage: string = ''); overload;
     class procedure AreNotEqualArray<T>(const AExpected, AActual: TArray<T>; const AMessage: string = '');
     class procedure AreNotEqualBytes(const AExpected, AActual: TBytes; const AMessage: string = '');
+    class procedure AreSameRect(const AExpected, AActual: TRectF; const AEpsilon: Single = 0; const AMessage: string = '');
     class procedure AreSameValue(const AExpected, AActual: Double; const AEpsilon: Double = 0; const AMessage: string = ''); overload;
     class procedure AreSameValue(const AExpected, AActual: Single; const AEpsilon: Single = 0; const AMessage: string = ''); overload;
     class procedure AreSimilar(const AExpectedHash: string; const AActual: ISkImage; AMinSimilarity: Double = DefaultMinImageSimilarity; const AMessage: string = ''); overload;
+    class procedure AreSimilar(const AExpectedHash: string; const AActual: ISkPixmap; AMinSimilarity: Double = DefaultMinImageSimilarity; const AMessage: string = ''); overload;
+    class procedure AreSimilar(const AExpectedHash: string; const AActual: ISkCodec; AMinSimilarity: Double = DefaultMinImageSimilarity; const AMessage: string = ''); overload;
     class procedure AreSimilar(const AExpected, AActual: ISkImage; AMinSimilarity: Double = DefaultMinImageSimilarity; const AMessage: string = ''); overload;
+    class property OnImageChecking: TOnImageCheckingProc read FOnImageChecking write FOnImageChecking;
+  end;
+
+  { TSkPathHelper }
+
+  TSkPathHelper = record helper for TPath
+  public
+    class function GetNewTempPath: string; static;
+    class function GetNewTempFileName(AExtension: string = ''): string; static;
   end;
 
   {$IF CompilerVersion < 29}
@@ -95,6 +121,14 @@ type
     class constructor Create;
   public
     class property Invariant: TFormatSettings read FInvariant;
+  end;
+  {$ENDIF}
+
+  {$IF CompilerVersion < 29}
+  { TSkMatrixHelper }
+
+  TSkMatrixHelper = record helper for TMatrix
+    function EqualsTo(const AMatrix: TMatrix; const Epsilon: Single = TEpsilon.Matrix): Boolean;
   end;
   {$ENDIF}
 
@@ -119,16 +153,18 @@ type
   {$ENDIF}
 
 function BytesToHex(const ABytes: TBytes): string;
+procedure DrawImageFitCrop(const ACanvas: ISkCanvas; const ADest: TRectF; const AImage: ISkImage; const APaint: ISkPaint = nil);
 function HexToBytes(AString: string): TBytes;
+/// <summary>Simple conversion of path elements to text, to help compare paths.</summary>
 function PathToText(const APath: ISkPath): string;
+function RectToString(const R: TRectF): string;
+function StringToRect(const S: string): TRectF;
 
 implementation
 
 uses
   { Delphi }
-  System.IOUtils,
   System.ZLib,
-  System.Types,
   System.UITypes,
   DUnitX.ResStrs,
 
@@ -159,6 +195,37 @@ begin
   end;
 end;
 
+procedure DrawImageFitCrop(const ACanvas: ISkCanvas; const ADest: TRectF;
+  const AImage: ISkImage; const APaint: ISkPaint);
+var
+  LRect: TRectF;
+  LRatio: Double;
+begin
+  LRect := TRectF.Create(0, 0, AImage.Width, AImage.Height);
+  if (ADest.Width > 0) and (ADest.Height > 0) then
+  begin
+    if (LRect.Width / ADest.Width) < (LRect.Height / ADest.Height) then
+      LRatio := LRect.Width / ADest.Width
+    else
+      LRatio := LRect.Height / ADest.Height;
+
+    ACanvas.Save;
+    try
+      if not SameValue(LRatio, 0, TEpsilon.Position) then
+      begin
+        ACanvas.ClipRect(ADest, TSkClipOp.Intersect, True);
+        LRect := TRectF.Create(0, 0, Round(LRect.Width / LRatio), Round(LRect.Height / LRatio));
+        RectCenter(LRect, ADest);
+        ACanvas.Translate(LRect.Left, LRect.Top);
+        ACanvas.Scale(LRect.Width / AImage.Width, LRect.Height / AImage.Height);
+      end;
+      ACanvas.DrawImage(AImage, 0, 0, TSkSamplingOptions.High, APaint);
+    finally
+      ACanvas.Restore;
+    end;
+  end;
+end;
+
 function HexToBytes(AString: string): TBytes;
 var
   I: Integer;
@@ -180,7 +247,6 @@ begin
   end;
 end;
 
-// Just simple conversion of path elements to text, to help compare paths
 function PathToText(const APath: ISkPath): string;
 
   function PointsToStr(const APoints: TSkPathPoints; const ACount: Integer): string; inline;
@@ -197,26 +263,42 @@ function PathToText(const APath: ISkPath): string;
   end;
 
 const
-  LPointCount: array[TSkPathVerb] of Integer = (   1   ,    2   ,    3   ,    3   ,    4  ,     1   );
-  LVerbNames : array[TSkPathVerb] of string  = ('Move' , 'Line' , 'Quad' , 'Conic', 'Cubic', 'Close');
+  PointCount: array[TSkPathVerb] of Integer = (   1   ,    2   ,    3   ,    3   ,    4  ,     1   );
+  VerbNames : array[TSkPathVerb] of string  = ('Move' , 'Line' , 'Quad' , 'Conic', 'Cubic', 'Close');
 var
   LElem: TSkPathIteratorElem;
-  LLine: string;
-  LStrings: TStrings;
+  LElementsReflection: TArray<string>;
+  LText: string;
 begin
-  LStrings := TStringList.Create;
-  try
-    LStrings.LineBreak := #13#10;
-    for LElem in APath.GetIterator(False) do
-    begin
-      LLine := LVerbNames[LElem.Verb] + ': ' + PointsToStr(LElem.Points, LPointCount[LElem.Verb]);
-      if LElem.Verb = TSkPathVerb.Conic then
-        LLine := LLine + ', (Conic Weight: ' + FormatFloat('0.####', LElem.ConicWeight, TFormatSettings.Invariant) + ')';
-      LStrings.Add(LLine);
-    end;
-    Result := LStrings.Text.Trim;
-  finally
-    LStrings.Free;
+  LElementsReflection := [];
+  for LElem in APath.GetIterator(False) do
+  begin
+    LText := VerbNames[LElem.Verb] + ': ' + PointsToStr(LElem.Points, PointCount[LElem.Verb]);
+    if LElem.Verb = TSkPathVerb.Conic then
+      LText := LText + ', (Conic Weight: ' + FormatFloat('0.####', LElem.ConicWeight, TFormatSettings.Invariant) + ')';
+    LElementsReflection := LElementsReflection + [LText];
+  end;
+  Result := string.Join(' | ', LElementsReflection);
+end;
+
+function RectToString(const R: TRectF): string;
+begin
+  Result := '(' + FloatToStr(R.Left, TFormatSettings.Invariant) + ',' + FloatToStr(R.Top, TFormatSettings.Invariant) + ',' +
+    FloatToStr(R.Right, TFormatSettings.Invariant) + ',' + FloatToStr(R.Bottom, TFormatSettings.Invariant) + ')';
+end;
+
+function StringToRect(const S: string): TRectF;
+var
+  LValues: TArray<string>;
+begin
+  LValues := S.Split(['(', ')', ','], TStringSplitOptions.ExcludeEmpty);
+  if (Length(LValues) < 4) or
+    not TryStrToFloat(LValues[0], Result.Left, TFormatSettings.Invariant) or
+    not TryStrToFloat(LValues[1], Result.Top, TFormatSettings.Invariant) or
+    not TryStrToFloat(LValues[2], Result.Right, TFormatSettings.Invariant) or
+    not TryStrToFloat(LValues[3], Result.Bottom, TFormatSettings.Invariant) then
+  begin
+    Result := TRectF.Empty;
   end;
 end;
 
@@ -228,8 +310,17 @@ begin
 end;
 
 function TTestBase.AssetsPath: string;
+var
+  LClassSubPath: string;
 begin
   Result := RootAssetsPath;
+  LClassSubPath := ClassName;
+  if LClassSubPath.StartsWith('TSk', False) then
+    LClassSubPath := LClassSubPath.Substring(Length('TSk'));
+  if LClassSubPath.EndsWith('Tests', False) then
+    LClassSubPath := LClassSubPath.Substring(0, LClassSubPath.Length - Length('Tests'));
+  if LClassSubPath <> '' then
+    Result := CombinePaths(Result, LClassSubPath);
 end;
 
 function TTestBase.CombinePaths(const APath, ASubPath: string): string;
@@ -275,7 +366,7 @@ begin
   DoRegisterFiles(AFontProvider, TDirectory.GetFiles(FontAssetsPath, '*.pfb'));
 end;
 
-function TTestBase.RootAssetsPath: string;
+class function TTestBase.RootAssetsPath: string;
 begin
   {$IFDEF MSWINDOWS}
   Result := TPath.GetFullPath('..\..\..\Assets\');
@@ -291,14 +382,29 @@ begin
 end;
 
 procedure TTestBase.Setup;
+var
+  LAssetsPath: string;
 begin
   {$IFDEF SET_EXCEPTION_MASK}
   SetExceptionMask(exAllArithmeticExceptions);
   {$ENDIF}
+  LAssetsPath := AssetsPath;
+  if (not LAssetsPath.IsEmpty) and not TDirectory.Exists(LAssetsPath) then
+  begin
+    TDirectory.CreateDirectory(LAssetsPath);
+    FAssetsPathCreated := True;
+  end;
+end;
+
+function TTestBase.SvgAssetsPath: string;
+begin
+  Result := CombinePaths(RootAssetsPath, 'Svg');
 end;
 
 procedure TTestBase.TearDown;
 begin
+  if FAssetsPathCreated and TDirectory.Exists(AssetsPath) and (TDirectory.GetFiles(AssetsPath, '*', TSearchOption.soAllDirectories) = nil) then
+    TDirectory.Delete(AssetsPath, True);
 end;
 
 { TAssertHelper }
@@ -360,6 +466,8 @@ var
   LPixmap: ISkPixmap;
   LData: TBytes;
 begin
+  Assert.IsNotNull(AActual, 'Invalid SkImage (nil)');
+  DoImageChecking(AActual);
   LActualPixmapBytes := nil;
   SetLength(LData, 4 * AActual.Width * AActual.Height);
   if Length(LData) > 0 then
@@ -378,6 +486,8 @@ var
   LPixmap: ISkPixmap;
   LData: TBytes;
 begin
+  Assert.IsNotNull(AActual, 'Invalid SkCodec (nil)');
+  DoImageChecking(AActual);
   LActualPixmapBytes := nil;
   SetLength(LData, 4 * AActual.Width * AActual.Height);
   if Length(LData) > 0 then
@@ -387,6 +497,22 @@ begin
     LActualPixmapBytes := GetPixmapBytes(LPixmap);
   end;
   AreEqualCRC32(AExpected, LActualPixmapBytes, AMessage);
+end;
+
+class procedure TAssertHelper.AreEqualCRC32(const AExpected: Cardinal;
+  const AActual: ISkPixmap; const AMessage: string);
+begin
+  Assert.IsNotNull(AActual, 'Invalid SkPixmap (nil)');
+  DoImageChecking(AActual);
+  AreEqualCRC32(AExpected, GetPixmapBytes(AActual), AMessage);
+end;
+
+class procedure TAssertHelper.AreEqualPixels(const AExpected,
+  AActual: ISkPixmap; const AMessage: string);
+begin
+  DoAssert;
+  if not AreSameArray<Byte>(GetPixmapBytes(AExpected), GetPixmapBytes(AActual)) then
+    Fail(SPixelsNotEqual + AMessage, ReturnAddress);
 end;
 
 class procedure TAssertHelper.AreEqualPixels(const AExpectedEncodedImage,
@@ -451,6 +577,19 @@ begin
   Result := AreSameArray<Byte>(LExpectedPixels, LActualPixels);
 end;
 
+class procedure TAssertHelper.AreSameRect(const AExpected, AActual: TRectF;
+  const AEpsilon: Single; const AMessage: string);
+begin
+  DoAssert;
+  if not System.Math.SameValue(AExpected.Left, AActual.Left, AEpsilon) or
+    not System.Math.SameValue(AExpected.Top, AActual.Top, AEpsilon) or
+    not System.Math.SameValue(AExpected.Right, AActual.Right, AEpsilon) or
+    not System.Math.SameValue(AExpected.Bottom, AActual.Bottom, AEpsilon) then
+  begin
+    FailFmt(SUnexpectedErrorStr, [RectToString(AExpected), RectToString(AActual), AMessage], ReturnAddress);
+  end;
+end;
+
 class procedure TAssertHelper.AreSameValue(const AExpected, AActual,
   AEpsilon: Double; const AMessage: string);
 begin
@@ -468,12 +607,48 @@ begin
 end;
 
 class procedure TAssertHelper.AreSimilar(const AExpectedHash: string;
+  const AActual: ISkPixmap; AMinSimilarity: Double; const AMessage: string);
+var
+  LActualHash: string;
+  LActualImage: ISkImage;
+  LSimilarity: Double;
+begin
+  Assert.IsNotNull(AActual, 'Invalid SkPixmap (nil)');
+  DoAssert;
+  LActualImage := TSkImage.MakeRasterCopy(AActual);
+  DoImageChecking(LActualImage);
+  LActualHash := TImageHashing.Hash(LActualImage);
+  LSimilarity := TImageHashing.Similarity(AExpectedHash, LActualHash);
+  if CompareValue(LSimilarity, AMinSimilarity, TEpsilon.Vector) = LessThanValue then
+    FailFmt(SImagesNotSimilar, [AMinSimilarity, LSimilarity, LActualHash, AMessage], ReturnAddress);
+end;
+
+class procedure TAssertHelper.AreSimilar(const AExpectedHash: string;
+  const AActual: ISkCodec; AMinSimilarity: Double; const AMessage: string);
+var
+  LActualHash: string;
+  LActualImage: ISkImage;
+  LSimilarity: Double;
+begin
+  Assert.IsNotNull(AActual, 'Invalid SkCodec (nil)');
+  DoAssert;
+  LActualImage := AActual.GetImage(TSkColorType.BGRA8888, TSkAlphaType.Premul, TSkColorSpace.MakeSRGB);
+  DoImageChecking(LActualImage);
+  LActualHash := TImageHashing.Hash(LActualImage);
+  LSimilarity := TImageHashing.Similarity(AExpectedHash, LActualHash);
+  if CompareValue(LSimilarity, AMinSimilarity, TEpsilon.Vector) = LessThanValue then
+    FailFmt(SImagesNotSimilar, [AMinSimilarity, LSimilarity, LActualHash, AMessage], ReturnAddress);
+end;
+
+class procedure TAssertHelper.AreSimilar(const AExpectedHash: string;
   const AActual: ISkImage; AMinSimilarity: Double; const AMessage: string);
 var
   LActualHash: string;
   LSimilarity: Double;
 begin
+  Assert.IsNotNull(AActual, 'Invalid SkImage (nil)');
   DoAssert;
+  DoImageChecking(AActual);
   LActualHash := TImageHashing.Hash(AActual);
   LSimilarity := TImageHashing.Similarity(AExpectedHash, LActualHash);
   if CompareValue(LSimilarity, AMinSimilarity, TEpsilon.Vector) = LessThanValue then
@@ -487,28 +662,85 @@ var
   LSimilarity: Double;
 begin
   DoAssert;
-  LActualHash := TImageHashing.Hash(AActual);
-  LSimilarity := TImageHashing.Similarity(LActualHash, AExpected);
-  if CompareValue(LSimilarity, AMinSimilarity, TEpsilon.Vector) = LessThanValue then
-    FailFmt(SImagesNotSimilar, [AMinSimilarity, LSimilarity, LActualHash, AMessage], ReturnAddress);
+  DoImageChecking(AActual);
+  if AExpected <> AActual then
+  begin
+    Assert.IsNotNull(AExpected, 'Invalid SkImage (nil)');
+    Assert.IsNotNull(AActual, 'Invalid SkImage (nil)');
+    LActualHash := TImageHashing.Hash(AActual);
+    LSimilarity := TImageHashing.Similarity(LActualHash, AExpected);
+    if CompareValue(LSimilarity, AMinSimilarity, TEpsilon.Vector) = LessThanValue then
+      FailFmt(SImagesNotSimilar, [AMinSimilarity, LSimilarity, LActualHash, AMessage], ReturnAddress);
+  end;
+end;
+
+class procedure TAssertHelper.DoImageChecking(const AImage: ISkImage);
+begin
+  if Assigned(AImage) and Assigned(FOnImageChecking) then
+    FOnImageChecking(AImage);
+end;
+
+class procedure TAssertHelper.DoImageChecking(const AImageCodec: ISkCodec);
+begin
+  if Assigned(AImageCodec) and Assigned(FOnImageChecking) then
+    DoImageChecking(AImageCodec.GetImage(TSkColorType.BGRA8888));
+end;
+
+class procedure TAssertHelper.DoImageChecking(const AImagePixmap: ISkPixmap);
+begin
+  if Assigned(AImagePixmap) and Assigned(FOnImageChecking) then
+    DoImageChecking(TSkImage.MakeFromRaster(AImagePixmap));
 end;
 
 class function TAssertHelper.GetPixmapBytes(const APixmap: ISkPixmap): TBytes;
 var
   LStream: TBytesStream;
+  LIndex: NativeUInt;
+  LRow: Integer;
 begin
   LStream := TBytesStream.Create;
   try
-    LStream.WriteData(APixmap.Width, SizeOf(APixmap.Width));
-    LStream.WriteData(APixmap.Height, SizeOf(APixmap.Height));
-    LStream.WriteData(APixmap.ColorType, SizeOf(APixmap.ColorType));
-    LStream.WriteData(APixmap.AlphaType, SizeOf(APixmap.AlphaType));
+    LStream.WriteData(Cardinal(APixmap.Width));
+    LStream.WriteData(Cardinal(APixmap.Height));
+    LStream.WriteData(Cardinal(APixmap.ColorType));
+    LStream.WriteData(Cardinal(APixmap.AlphaType));
     if (APixmap.Width > 0) and (APixmap.Height > 0) then
-      LStream.WriteData(APixmap.Pixels, 4 * APixmap.Width * APixmap.Height);
+    begin
+      if SkBytesPerPixel[APixmap.ColorType] * APixmap.Width * APixmap.Height = NativeInt(APixmap.RowBytes) * APixmap.Height then
+        LStream.WriteData(APixmap.Pixels, SkBytesPerPixel[APixmap.ColorType] * APixmap.Width * APixmap.Height)
+      else
+      begin
+        LIndex := 0;
+        for LRow := 0 to APixmap.Height - 1 do
+        begin
+          LStream.WriteData(NativeUInt(APixmap.Pixels) + LIndex, SkBytesPerPixel[APixmap.ColorType] * APixmap.Width);
+          Inc(LIndex, APixmap.RowBytes);
+        end;
+      end;
+    end;
     Result := Copy(LStream.Bytes, 0, LStream.Size);
   finally
     LStream.Free;
   end;
+end;
+
+{ TSkPathHelper }
+
+class function TSkPathHelper.GetNewTempFileName(AExtension: string): string;
+begin
+  if (AExtension = '') or (AExtension = '.') then
+    AExtension := '.tmp'
+  else if not AExtension.StartsWith('.') then
+    AExtension := '.' + AExtension;
+  repeat
+    Result := TPath.Combine(TPath.GetTempPath, TPath.GetGUIDFileName(False) + AExtension);
+  until not TFile.Exists(Result);
+end;
+
+class function TSkPathHelper.GetNewTempPath: string;
+begin
+  Result := TPath.Combine(TPath.GetTempPath, TPath.GetGUIDFileName(False) + TPath.DirectorySeparatorChar);
+  TDirectory.CreateDirectory(Result);
 end;
 
 {$IF CompilerVersion < 29}
@@ -517,6 +749,19 @@ end;
 class constructor TSkFormatSettingsHelper.Create;
 begin
   FInvariant := TFormatSettings.Create('en-US');
+end;
+{$ENDIF}
+
+{$IF CompilerVersion < 29}
+{ TSkMatrixHelper }
+
+function TSkMatrixHelper.EqualsTo(const AMatrix: TMatrix; const Epsilon: Single = TEpsilon.Matrix): Boolean;
+begin
+  Result := SameValue(Self.m11, AMatrix.m11, Epsilon) and SameValue(Self.m12, AMatrix.m12, Epsilon) and
+    SameValue(Self.m13, AMatrix.m13, Epsilon) and SameValue(Self.m21, AMatrix.m21, Epsilon) and
+    SameValue(Self.m22, AMatrix.m22, Epsilon) and SameValue(Self.m23, AMatrix.m23, Epsilon) and
+    SameValue(Self.m31, AMatrix.m31, Epsilon) and SameValue(Self.m32, AMatrix.m32, Epsilon) and
+    SameValue(Self.m33, AMatrix.m33, Epsilon);
 end;
 {$ENDIF}
 

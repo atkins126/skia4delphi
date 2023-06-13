@@ -2,10 +2,9 @@
 {                                                                        }
 {                              Skia4Delphi                               }
 {                                                                        }
-{ Copyright (c) 2011-2022 Google LLC.                                    }
-{ Copyright (c) 2021-2022 Skia4Delphi Project.                           }
+{ Copyright (c) 2021-2023 Skia4Delphi Project.                           }
 {                                                                        }
-{ Use of this source code is governed by a BSD-style license that can be }
+{ Use of this source code is governed by the MIT license that can be     }
 { found in the LICENSE file.                                             }
 {                                                                        }
 {************************************************************************}
@@ -34,8 +33,10 @@ type
   TfrmMain = class(TForm)
     vsbContent: TVertScrollBox;
     tmrSimulateScroll: TTimer;
+    tmrStart: TTimer;
     procedure tmrSimulateScrollTimer(Sender: TObject);
     procedure FormCreate(Sender: TObject);
+    procedure tmrStartTimer(Sender: TObject);
   private
     FNextScrollUp: Boolean;
     FPaintCount: Int64;
@@ -57,13 +58,16 @@ implementation
 {$R *.fmx}
 
 uses
+  {$IFDEF SKIA}
+  { Skia }
+  FMX.Skia,
+  {$ENDIF}
+
   { Delphi }
-  System.IOUtils,
   {$IF CompilerVersion >= 31}
   FMX.DialogService,
   {$ENDIF}
-  { Skia }
-  Skia.FMX;
+  System.IOUtils, FMX.Types3D;
 
 { TfrmMain }
 
@@ -87,7 +91,7 @@ const
   function GetAssetsPath: string;
   begin
     {$IFDEF MSWINDOWS}
-    Result := TPath.GetFullPath('..\..\..\..\..\Assets\Samples\');
+    Result := TPath.GetFullPath('..\..\..\Assets\');
     {$ELSEIF defined(iOS) or defined(ANDROID)}
     Result := TPath.GetDocumentsPath;
     {$ELSEIF defined(MACOS)}
@@ -199,8 +203,7 @@ begin
   ShowMessage(StartingMessage,
     procedure
     begin
-      frmMain.FRunning := True;
-      frmMain.Invalidate;
+      frmMain.tmrStart.Enabled := True;
     end);
 end;
 
@@ -370,22 +373,46 @@ begin
 end;
 
 procedure TfrmMain.tmrSimulateScrollTimer(Sender: TObject);
+
+  function GetRenderName: string;
+  begin
+    Result := Canvas.ClassName;
+    // When TCanvasGpu is used, the real render is the 3D forms render
+    if SameText(Result, 'TCanvasGpu') then
+      Result := Format('%s -> %s', [TContextManager.DefaultContextClass.ClassName, Result]);
+  end;
+
 begin
   if FStopwatch.ElapsedMilliseconds > 6000 then
   begin
     FStopwatch.Stop;
     tmrSimulateScroll.Enabled := False;
     vsbContent.HitTest := True;
+    {$IFDEF SKIA}
     if GlobalUseSkia then
-      ShowMessage(Format('SkiaCanvas: %g fps' + sLineBreak + 'Form.Quality: %s' + sLineBreak + sLineBreak + 'To compare the results with the firemonkey''s default canvas, just remove the line "GlobalUseSkia := True" from the .dpr file of project.', [FPaintCount / FStopwatch.Elapsed.TotalSeconds, GetEnumName(TypeInfo(TCanvasQuality), Ord(Self.Quality))]))
+    begin
+      ShowMessage(Format('Skia render (%s): %g fps' + sLineBreak + 'Form.Quality: %s' + sLineBreak + sLineBreak +
+        'To compare the results with the firemonkey''s default canvas, just remove the line "GlobalUseSkia := True" ' +
+        'from the .dpr file of project.', [GetRenderName, FPaintCount / FStopwatch.Elapsed.TotalSeconds,
+        GetEnumName(TypeInfo(TCanvasQuality), Ord(Self.Quality))]))
+    end
     else
-      ShowMessage(Format('FmxCanvas: %g fps' + sLineBreak + 'Form.Quality: %s', [FPaintCount / FStopwatch.Elapsed.TotalSeconds, GetEnumName(TypeInfo(TCanvasQuality), Ord(Self.Quality))]));
+    {$ENDIF}
+      ShowMessage(Format('FMX render (%s): %g fps' + sLineBreak + 'Form.Quality: %s', [GetRenderName,
+        FPaintCount / FStopwatch.Elapsed.TotalSeconds, GetEnumName(TypeInfo(TCanvasQuality), Ord(Self.Quality))]));
   end
   else if FNextScrollUp then
     SimulateScrollUp
   else
     SimulateScrollDown;
   FNextScrollUp := not FNextScrollUp;
+end;
+
+procedure TfrmMain.tmrStartTimer(Sender: TObject);
+begin
+  tmrStart.Enabled := False;
+  FRunning := True;
+  Invalidate;
 end;
 
 { TVertScrollBox }

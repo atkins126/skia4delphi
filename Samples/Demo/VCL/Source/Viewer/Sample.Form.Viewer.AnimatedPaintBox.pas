@@ -2,10 +2,9 @@
 {                                                                        }
 {                              Skia4Delphi                               }
 {                                                                        }
-{ Copyright (c) 2011-2022 Google LLC.                                    }
-{ Copyright (c) 2021-2022 Skia4Delphi Project.                           }
+{ Copyright (c) 2021-2023 Skia4Delphi Project.                           }
 {                                                                        }
-{ Use of this source code is governed by a BSD-style license that can be }
+{ Use of this source code is governed by the MIT license that can be     }
 { found in the LICENSE file.                                             }
 {                                                                        }
 {************************************************************************}
@@ -21,7 +20,7 @@ uses
   Vcl.Controls, Vcl.Forms, Vcl.ExtCtrls,
 
   { Skia }
-  Skia, Skia.Vcl,
+  System.Skia, Vcl.Skia,
 
   { Sample }
   Sample.Form.Base.Viewer;
@@ -59,14 +58,14 @@ procedure TfrmAnimatedPaintBoxViewer.apbDrawAnimationDraw(ASender: TObject;
   const AOpacity: Single);
 begin
   if Assigned(FDrawProc) then
-    FDrawProc(ACanvas, ADest, AProgress * apbDraw.Duration);
+    FDrawProc(ACanvas, ADest, apbDraw.Animation.CurrentTime);
 end;
 
 procedure TfrmAnimatedPaintBoxViewer.apbDrawMouseMove(Sender: TObject;
   Shift: TShiftState; X, Y: Integer);
 begin
   if Assigned(FOnMouseMove) then
-    FOnMouseMove(X, Y);
+    FOnMouseMove(X / apbDraw.ScaleFactor, Y / apbDraw.ScaleFactor);
 end;
 
 procedure TfrmAnimatedPaintBoxViewer.FormClose(Sender: TObject;
@@ -75,7 +74,7 @@ begin
   inherited;
   if Action <> TCloseAction.caNone then
   begin
-    apbDraw.Animate := False;
+    apbDraw.Animation.StopAtCurrent;
     FDrawProc := nil;
     FOnMouseMove := nil;
   end;
@@ -98,7 +97,7 @@ begin
   FDrawProc := ADrawProc;
   apbDraw.Align := alClient;
   apbDraw.Redraw;
-  apbDraw.Animate := True;
+  apbDraw.Animation.Enabled := True;
   inherited Show(ATitle, ADescription);
 end;
 
@@ -111,7 +110,7 @@ begin
   apbDraw.Align := alNone;
   DrawSize := TSize.Create(ADrawWidth, ADrawHeight);
   apbDraw.Redraw;
-  apbDraw.Animate := True;
+  apbDraw.Animation.Enabled := True;
   inherited Show(ATitle, ADescription);
 end;
 
