@@ -128,7 +128,11 @@ type
     procedure OnTestFailure(const AThreadId: TThreadID; const AFailure: ITestError);
     procedure OnTestIgnored(const AThreadId: TThreadID; const AIgnored: ITestResult);
     procedure OnTestingEnds(const ARunResults: IRunResults);
+    {$IF CompilerVersion = 29}
+    procedure OnTestingStarts(const AThreadId, ATestCount, ATestActiveCount: Cardinal);
+    {$ELSE}
     procedure OnTestingStarts(const AThreadId: TThreadID; ATestCount, ATestActiveCount: Cardinal);
+    {$ENDIF}
     procedure OnTestMemoryLeak(const AThreadId: TThreadID; const AIgnored: ITestResult);
     procedure OnTestSuccess(const AThreadId: TThreadID; const ATest: ITestResult);
   public
@@ -391,9 +395,11 @@ begin
             end;
             FLastImageChecking.EncodeToFile(GetExpectedImageFileName(ATest));
           end;
+        {$IF CompilerVersion >= 32}
+        TTestResultType.Warning,
+        {$ENDIF}
         TTestResultType.Failure,
-        TTestResultType.Error,
-        TTestResultType.Warning:
+        TTestResultType.Error:
           begin
             if not TDirectory.Exists(WrongImagesPath) then
             begin
@@ -509,8 +515,13 @@ begin
     end);
 end;
 
+{$IF CompilerVersion = 29}
+procedure TAsyncTestRunner.OnTestingStarts(const AThreadId, ATestCount,
+  ATestActiveCount: Cardinal);
+{$ELSE}
 procedure TAsyncTestRunner.OnTestingStarts(const AThreadId: TThreadID;
   ATestCount, ATestActiveCount: Cardinal);
+{$ENDIF}
 begin
   if FGenerateExpectedImages and TFile.Exists(ExpectedImagesZipFile) then
     ExtractExpectedImages;
