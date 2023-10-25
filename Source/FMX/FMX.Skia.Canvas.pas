@@ -90,6 +90,7 @@ type
     FContextHandle: THandle;
     procedure BeginPaint(const ARect: TRectF; const AOpacity: Single; var ABrushData: TBrushData);
   strict protected
+    FAntiAlias: Boolean;
     FWrapper: ISkCanvasWrapper;
     constructor CreateFromPrinter(const APrinter: TAbstractPrinter); override;
     // Since FMX effects use TContext3D, on systems using OpenGLES it makes the
@@ -1533,6 +1534,7 @@ type
     procedure SwapBuffers(const AContextHandle: THandle); override;
   public
     destructor Destroy; override;
+    procedure AfterConstruction; override;
   end;
 
 {$ENDIF}
@@ -1548,6 +1550,8 @@ begin
     Result := TPixelFormat.RGBA;
   {$ELSEIF DEFINED(MACOS)}
   Result := TPixelFormat.BGRA;
+  {$ELSEIF DEFINED(LINUX)}
+  Result := TPixelFormat.BGRA;
   {$ELSE}
   Result := TPixelFormat.RGBA;
   {$ENDIF}
@@ -1557,6 +1561,7 @@ end;
 
 procedure TSkCanvasCustom.AfterConstruction;
 begin
+  FAntiAlias := Quality <> TCanvasQuality.HighPerformance;
   SkInitialize;
   inherited;
 end;
@@ -1589,7 +1594,7 @@ var
   LRadiusX: Single;
   LRadiusY: Single;
 begin
-  ABrushData.Paint.AntiAlias := Quality <> TCanvasQuality.HighPerformance;
+  ABrushData.Paint.AntiAlias := FAntiAlias;
   case ABrushData.Brush.Kind of
     TBrushKind.Solid: ABrushData.Paint.Color := MakeColor(ABrushData.Brush.Color, AOpacity);
     TBrushKind.Gradient:
@@ -2051,6 +2056,10 @@ end;
 class function TSkCanvasCustom.GetCanvasStyle: TCanvasStyles;
 begin
   Result := [];
+  {$IF CompilerVersion >= 36}
+  if GlobalSkiaBitmapsInParallel then
+    Result := Result + [TCanvasStyle.DisableGlobalLock];
+  {$ENDIF}
 end;
 
 {$IFDEF MODULATE_CANVAS}
@@ -2972,8 +2981,11 @@ end;
 // mandatory to cut in the middle of the word. To fix this we will readjust the
 // MaxWidth, align horizontally manually and cut with ClipRect.
 function TSkTextLayout.NeedHorizontalAlignment: Boolean;
+var
+  LShouldHaveSingleLine: Boolean;
 begin
-  Result := (not WordWrap) and (Trimming = TTextTrimming.None);
+  LShouldHaveSingleLine := (not WordWrap) and (not Text.Contains(#13)) and (not Text.Contains(#10));
+  Result := LShouldHaveSingleLine and (Trimming = TTextTrimming.None);
 end;
 
 procedure TSkTextLayout.RenderLayout(const ACanvas: ISkCanvas);
@@ -3186,14 +3198,23 @@ const
     end;
   end;
 
-  // Temporary solution to fix an issue with Skia
-  // https://bugs.chromium.org/p/skia/issues/detail?id=13117
-  //
-  // SkParagraph has several issues with the #13 line break, so the best thing
-  // to do is replace it with #10 or a zero-widh character (#8203)
-  function NormalizeParagraphText(const AText: string): string; inline;
+  function NormalizeParagraphText(const AText: string; APushedStyle: Boolean): string; inline;
+  const
+    // Ideographic space is similar to tab character as it has the size of two white spaces usually
+    IdeographicSpace = Char($3000);
   begin
-    Result := AText.Replace(#13#10, ZeroWidthChar + #10).Replace(#13, #10);
+    // Temporary solution for version m107, that have a know issue with tab character that are rendering as a square.
+    // https://github.com/skia4delphi/skia4delphi/issues/270
+    // https://issues.skia.org/issues/40043415
+    Result := AText.Replace(#09, IdeographicSpace);
+
+    // Temporary solution to fix an issue with Skia
+    // https://bugs.chromium.org/p/skia/issues/detail?id=13117
+    //
+    // SkParagraph has several issues with the #13 line break, so the best thing
+    // to do is replace it with #10 or a zero-widh character (#8203)
+    if APushedStyle then
+      Result := Result.Replace(#13#10, ZeroWidthChar + #10).Replace(#13, #10);
   end;
 
   function CreateParagraph(const AMaxLines: Integer; const ASubText: string;
@@ -3209,13 +3230,17 @@ const
     FOpacity    := Opacity;
     LAttributes := GetNormalizedAttributes(ASubText, ASubTextPosition);
     try
-      LBuilder := TSkParagraphBuilder.Create(CreateParagraphStyle(LAttributes, AMaxLines), TSkDefaultProviders.TypefaceFont);
+      LBuilder := TSkParagraphBuilder.Create(CreateParagraphStyle(LAttributes, AMaxLines),
+        TSkDefaultProviders.TypefaceFont);
       LLastAttributeEndIndex := 0;
       for LAttribute in LAttributes do
       begin
         if LLastAttributeEndIndex < LAttribute.Range.Pos then
-          LBuilder.AddText(ASubText.Substring(LLastAttributeEndIndex, LAttribute.Range.Pos - LLastAttributeEndIndex));
-        LText := NormalizeParagraphText(ASubText.Substring(LAttribute.Range.Pos, LAttribute.Range.Length));
+        begin
+          LBuilder.AddText(NormalizeParagraphText(ASubText.Substring(LLastAttributeEndIndex, LAttribute.Range.Pos -
+            LLastAttributeEndIndex), False));
+        end;
+        LText := NormalizeParagraphText(ASubText.Substring(LAttribute.Range.Pos, LAttribute.Range.Length), True);
         if not LText.IsEmpty then
         begin
           LBuilder.PushStyle(CreateTextStyle(LAttribute.Attribute));
@@ -3225,30 +3250,28 @@ const
         LLastAttributeEndIndex := LAttribute.Range.Pos + LAttribute.Range.Length;
       end;
       if LLastAttributeEndIndex < ASubText.Length then
-        LBuilder.AddText(ASubText.Substring(LLastAttributeEndIndex, ASubText.Length - LLastAttributeEndIndex));
+      begin
+        LBuilder.AddText(NormalizeParagraphText(ASubText.Substring(LLastAttributeEndIndex, ASubText.Length -
+          LLastAttributeEndIndex), False));
+      end;
     finally
       for LAttribute in LAttributes do
-        LAttribute.DisposeOf;
+        LAttribute.{$IF CompilerVersion <= 33}DisposeOf{$ELSE}Free{$ENDIF};
     end;
     Result := LBuilder.Build;
   end;
 
   procedure ParagraphLayout(const AParagraph: ISkParagraph; AMaxWidth: Single);
-  var
-    LMetrics: TSkMetrics;
+  const
+    MaxLayoutWidth = High(Integer) - High(Word);
   begin
-    AMaxWidth := Max(AMaxWidth, 0);
-    if not SameValue(AMaxWidth, 0, TEpsilon.Position) then
+    if CompareValue(AMaxWidth, 0, TEpsilon.Position) = GreaterThanValue then
     begin
-      // Try to add extra value to avoid trimming when put the same value (or near) to the MaxIntrinsicWidth
-      AParagraph.Layout(AMaxWidth + 1);
-      for LMetrics in AParagraph.LineMetrics do
-      begin
-        if InRange(AMaxWidth, LMetrics.Width - TEpsilon.Position, LMetrics.Width + 1) then
-          Exit;
-      end;
-    end;
-    AParagraph.Layout(AMaxWidth);
+      // The SkParagraph.Layout calls a floor for the MaxWidth, so we should ceil it to force the original AMaxWidth
+      AParagraph.Layout(Min(Ceil(AMaxWidth + TEpsilon.Matrix), MaxLayoutWidth));
+    end
+    else
+      AParagraph.Layout(0);
   end;
 
   procedure DoUpdateParagraph(var AParagraph: TParagraph;
@@ -3648,6 +3671,14 @@ end;
 
 { TSkRasterCanvas }
 
+procedure TSkRasterCanvas.AfterConstruction;
+begin
+  inherited;
+  // For some reason that is still unclear, the CPU (raster) backend on the m107 performs worse when we disable
+  // AntiAlias. So let's leave it always enabled for now.
+  FAntiAlias := True;
+end;
+
 destructor TSkRasterCanvas.Destroy;
 begin
   if Parent <> nil then
@@ -3685,7 +3716,7 @@ begin
       FBitmap := FmuxBitmapCreate(LWidth, LHeight, FBitmapBits);
     end;
     FmuxGetBitmapInfo(FBitmap, LWidth, LHeight, LData);
-    FBackBufferSurface := TSkSurface.MakeRasterDirect(TSkImageInfo.Create(LWidth, LHeight, TSkColorType.RGBA8888), LData, LWidth * 4);
+    FBackBufferSurface := TSkSurface.MakeRasterDirect(TSkImageInfo.Create(LWidth, LHeight, TSkColorType.BGRA8888), LData, LWidth * 4);
     {$ELSEIF DEFINED(MACOS) and NOT DEFINED(IOS)}
     if FBitmap = nil then
     begin
@@ -3851,7 +3882,7 @@ type
   strict private
     FCurrent: IFMXCanvasService;
     {$IF DEFINED(DEBUG) and (CompilerVersion >= 31)}
-    FFormBeforeShownMessageId: Integer;
+    FFormBeforeShownMessageId: {$IF CompilerVersion >= 36}TMessageSubscriptionId{$ELSE}Integer{$ENDIF};
     FGlobalUseSkiaInRegistration: Boolean;
     procedure FormBeforeShownHandler(const ASender: TObject; const AMessage: System.Messaging.TMessage);
     {$ENDIF}

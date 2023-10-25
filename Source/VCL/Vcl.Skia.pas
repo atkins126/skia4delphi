@@ -1099,6 +1099,7 @@ type
     FHasCustomCursor: Boolean;
     FIgnoreCursorChange: Boolean;
     FIsMouseOver: Boolean;
+    FLastMousePosition: TPoint;
     FParagraph: ISkParagraph;
     FParagraphBounds: TRectF;
     FParagraphLayoutWidth: Single;
@@ -1121,11 +1122,11 @@ type
     function GetParagraph: ISkParagraph;
     function GetParagraphBounds: TRectF;
     function HasFitSizeChanged: Boolean;
-    procedure ParagraphLayout(const AWidth: Single);
+    procedure ParagraphLayout(AMaxWidth: Single);
     procedure SetCaption(const AValue: string);
     procedure SetWords(const AValue: TWordsCollection);
-    procedure SetWordsMouseOver(const AValue: TCustomWordsItem);
     procedure UpdateCursor; inline;
+    procedure UpdateWordsMouseOver;
     procedure WMLButtonUp(var AMessage: TWMLButtonUp); message WM_LBUTTONUP;
     procedure WMMouseMove(var AMessage: TWMMouseMove); message WM_MOUSEMOVE;
   strict private
@@ -1207,6 +1208,7 @@ uses
   Winapi.OpenGL,
   Winapi.OpenGLext,
   Winapi.MMSystem,
+  System.AnsiStrings,
   System.Math.Vectors,
   System.ZLib,
   System.IOUtils,
@@ -2061,7 +2063,8 @@ end;
 procedure TSkSvgBrush.Render(const ACanvas: ISkCanvas; const ADestRect: TRectF;
   const AOpacity: Single);
 
-  function GetWrappedDest(const ADOM: ISkSVGDOM; const ASvgRect, ADestRect: TRectF; const AIntrinsicSize: TSizeF): TRectF;
+  function GetWrappedDest(const ADOM: ISkSVGDOM; const ASvgRect, ADestRect: TRectF;
+    const AIntrinsicSize: TSizeF): TRectF;
   var
     LRatio: Single;
   begin
@@ -2121,8 +2124,9 @@ procedure TSkSvgBrush.Render(const ACanvas: ISkCanvas; const ADestRect: TRectF;
     begin
       if AWrapMode <> TSkSvgWrapMode.Default then
       begin
-        ADOM.Root.Width  := TSkSVGLength.Create(AWrappedDest.Width,  TSkSVGLengthUnit.Pixel);
-        ADOM.Root.Height := TSkSVGLength.Create(AWrappedDest.Height, TSkSVGLengthUnit.Pixel);
+        LCanvas.Scale(AWrappedDest.Width / ASvgRect.Width, AWrappedDest.Height / ASvgRect.Height);
+        ADOM.Root.Width  := TSkSVGLength.Create(ASvgRect.Width,  TSkSVGLengthUnit.Pixel);
+        ADOM.Root.Height := TSkSVGLength.Create(ASvgRect.Height, TSkSVGLengthUnit.Pixel);
       end;
     end
     else
@@ -2178,8 +2182,9 @@ begin
           begin
             if FWrapMode <> TSkSvgWrapMode.Default then
             begin
-              LDOM.Root.Width  := TSkSVGLength.Create(LWrappedDest.Width,  TSkSVGLengthUnit.Pixel);
-              LDOM.Root.Height := TSkSVGLength.Create(LWrappedDest.Height, TSkSVGLengthUnit.Pixel);
+              ACanvas.Scale(LWrappedDest.Width / LSvgRect.Width, LWrappedDest.Height / LSvgRect.Height);
+              LDOM.Root.Width  := TSkSVGLength.Create(LSvgRect.Width,  TSkSVGLengthUnit.Pixel);
+              LDOM.Root.Height := TSkSVGLength.Create(LSvgRect.Height, TSkSVGLengthUnit.Pixel);
             end;
           end
           else
@@ -2402,6 +2407,7 @@ type
   public
     constructor Create(const ATarget: ISkControlRenderTarget);
     destructor Destroy; override;
+    class function IsSupported: Boolean; static;
     procedure Redraw;
     procedure Resized;
     function TryRender(const ABackgroundBuffer: TBitmap; const AOpacity: Byte): Boolean;
@@ -2499,6 +2505,93 @@ begin
     Result := wglMakeCurrent(FDC, FGLRC);
 end;
 
+class function TSkGlControlRender.IsSupported: Boolean;
+type
+  PFNWGLGETEXTENSIONSSTRINGARBPROC = function (hdc: HDC): MarshaledAString; stdcall;
+const
+  WGLARBPixelFormatExtName = 'WGL_ARB_pixel_format';
+var
+  LClass: TWndClass;
+  LDC: HDC;
+  LEnd: MarshaledAString;
+  LExtensions: MarshaledAString;
+  LGetExtensionsStringARB: PFNWGLGETEXTENSIONSSTRINGARBPROC;
+  LGLRC: HGLRC;
+  LPixelFormat: Integer;
+  LPixelFormatDescriptor: TPixelFormatDescriptor;
+  LWindow: HWND;
+begin
+  FillChar(LClass, SizeOf(TWndClass), 0);
+  LClass.lpfnWndProc   := @DefWindowProc;
+  LClass.hInstance     := HInstance;
+  LClass.lpszClassName := '_temp';
+  if Winapi.Windows.RegisterClass(LClass) = 0 then
+    Exit(False);
+  try
+    LWindow := CreateWindowEx(WS_EX_TOOLWINDOW, '_temp', nil, WS_POPUP, 0, 0, 0, 0, 0, 0, HInstance, nil);
+    if LWindow = 0 then
+      Exit(False);
+    try
+      LDC := GetDC(LWindow);
+      if LDC = 0 then
+        Exit(False);
+      try
+        FillChar(LPixelFormatDescriptor, SizeOf(TPixelFormatDescriptor), 0);
+        LPixelFormatDescriptor.nSize        := SizeOf(TPixelFormatDescriptor);
+        LPixelFormatDescriptor.nVersion     := 1;
+        LPixelFormatDescriptor.dwFlags      := PFD_DRAW_TO_WINDOW or PFD_SUPPORT_OPENGL or PFD_DOUBLEBUFFER;
+        LPixelFormatDescriptor.iPixelType   := PFD_TYPE_RGBA;
+        LPixelFormatDescriptor.cColorBits   := 24;
+        LPixelFormatDescriptor.cAlphaBits   := 8;
+        LPixelFormatDescriptor.cStencilBits := 8;
+        LPixelFormatDescriptor.iLayerType   := PFD_MAIN_PLANE;
+        LPixelFormat := ChoosePixelFormat(LDC, @LPixelFormatDescriptor);
+        if (LPixelFormat = 0) or (not SetPixelFormat(LDC, LPixelFormat, @LPixelFormatDescriptor)) then
+          Exit(False);
+        LGLRC := wglCreateContext(LDC);
+        if LGLRC = 0 then
+          Exit(False);
+        try
+          if not wglMakeCurrent(LDC, LGLRC) then
+            Exit(False);
+          try
+            LGetExtensionsStringARB := GetProcAddress(GetModuleHandle(opengl32), 'wglGetExtensionsStringARB');
+            if not Assigned(LGetExtensionsStringARB) then
+            begin
+              LGetExtensionsStringARB := wglGetProcAddress('wglGetExtensionsStringARB');
+              if not Assigned(LGetExtensionsStringARB) then
+                Exit(False);
+            end;
+            LExtensions := LGetExtensionsStringARB(LDC);
+            while LExtensions^ <> #0 do
+            begin
+              LEnd := LExtensions;
+              while (LEnd^ <> ' ') and (LEnd^ <> #0) do
+                Inc(LEnd);
+              if (LEnd - LExtensions = Length(WGLARBPixelFormatExtName)) and (System.AnsiStrings.StrLIComp(LExtensions, WGLARBPixelFormatExtName, LEnd - LExtensions) = 0) then
+                Exit(True);
+              if LEnd^ = #0 then
+                Break;
+              LExtensions := LEnd + 1;
+            end;
+            Result := False;
+          finally
+            wglMakeCurrent(0, 0);
+          end;
+        finally
+          wglDeleteContext(LGLRC);
+        end;
+      finally
+        ReleaseDC(LWindow, LDC);
+      end;
+    finally
+      DestroyWindow(LWindow);
+    end;
+  finally
+    Winapi.Windows.UnregisterClass('_temp', HInstance);
+  end;
+end;
+
 procedure TSkGlControlRender.Redraw;
 begin
   FCachedImage := nil;
@@ -2587,7 +2680,13 @@ begin
   case ABackend of
     TSkControlRenderBackend.Default,
     TSkControlRenderBackend.Raster: Result := TSkRasterControlRender.Create(ATarget);
-    TSkControlRenderBackend.HardwareAcceleration: Result := TSkGlControlRender.Create(ATarget);
+    TSkControlRenderBackend.HardwareAcceleration:
+      begin
+        if TSkGlControlRender.IsSupported then
+          Result := TSkGlControlRender.Create(ATarget)
+        else
+          Result := TSkRasterControlRender.Create(ATarget);;
+      end;
   else
     Result := nil;
   end;
@@ -5396,8 +5495,8 @@ begin
     LNewWidth := ANewWidth;
     LNewHeight := ANewHeight;
     GetFitSize(LNewWidth, LNewHeight);
-    ANewWidth := Ceil(LNewWidth);
-    ANewHeight := Ceil(LNewHeight);
+    ANewWidth := Round(LNewWidth);
+    ANewHeight := Round(LNewHeight);
   end;
   Result := True;
 end;
@@ -5411,7 +5510,7 @@ begin
   begin
     TMessageManager.DefaultManager.SendMessage(Self, TItemClickedMessage.Create(LClickedItem));
     if Assigned(LClickedItem.OnClick) then
-      LClickedItem.OnClick(FWordsMouseOver)
+      LClickedItem.OnClick(LClickedItem)
     else
       inherited;
   end
@@ -5449,6 +5548,7 @@ end;
 procedure TSkLabel.CMMouseEnter(var AMessage: TMessage);
 begin
   FIsMouseOver := True;
+  FLastMousePosition := Point(-1, -1);
   inherited;
 end;
 
@@ -5456,7 +5556,7 @@ procedure TSkLabel.CMMouseLeave(var AMessage: TMessage);
 begin
   FIsMouseOver := False;
   inherited;
-  SetWordsMouseOver(nil);
+  UpdateWordsMouseOver;
 end;
 
 procedure TSkLabel.CMParentBiDiModeChanged(var AMessage: TMessage);
@@ -5825,7 +5925,7 @@ function TSkLabel.GetParagraphBounds: TRectF;
   begin
     LParagraph := Paragraph;
     if Assigned(LParagraph) then
-      Result := RectF(0, 0, Ceil(LParagraph.MaxIntrinsicWidth), Ceil(LParagraph.Height))
+      Result := RectF(0, 0, LParagraph.MaxIntrinsicWidth, LParagraph.Height)
     else
       Result := TRectF.Empty;
   end;
@@ -5941,27 +6041,50 @@ begin
 end;
 
 function TSkLabel.NormalizeParagraphText(const AText: string): string;
+const
+  // Ideographic space is similar to tab character as it has the size of two white spaces usually
+  IdeographicSpace = Char($3000);
 begin
+  // Temporary solution for version m107, that have a know issue with tab character that are rendering as a square.
+  // https://github.com/skia4delphi/skia4delphi/issues/270
+  // https://issues.skia.org/issues/40043415
+  Result := AText.Replace(#09, IdeographicSpace);
+
   // Temporary solution to fix an issue with Skia:
   // https://bugs.chromium.org/p/skia/issues/detail?id=13117
   // SkParagraph has several issues with the #13 line break, so the best thing
   // to do is replace it with #10 or a zero-widh character (#8203)
-  Result := AText.Replace(#13#10, #8203#10).Replace(#13, #10);
+  Result := Result.Replace(#13#10, #8203#10).Replace(#13, #10);
 end;
 
-procedure TSkLabel.ParagraphLayout(const AWidth: Single);
+procedure TSkLabel.ParagraphLayout(AMaxWidth: Single);
+
+  function DoParagraphLayout(const AParagraph: ISkParagraph; AMaxWidth: Single): Single;
+  begin
+    if SameValue(AMaxWidth, 0, TEpsilon.Position) then
+      Result := AMaxWidth
+    else
+      // The SkParagraph.Layout calls a floor for the MaxWidth, so we should ceil it to force the original AMaxWidth
+      Result := Ceil(AMaxWidth + TEpsilon.Matrix);
+    AParagraph.Layout(Result);
+  end;
+
+const
+  MaxLayoutWidth = High(Integer) - High(Word);
 var
+  LMaxWidthUsed: Single;
   LParagraph: ISkParagraph;
 begin
-  if not SameValue(FParagraphLayoutWidth, AWidth, TEpsilon.Position) then
+  AMaxWidth := EnsureRange(AMaxWidth, 0, MaxLayoutWidth);
+  if not SameValue(FParagraphLayoutWidth, AMaxWidth, TEpsilon.Position) then
   begin
     LParagraph := Paragraph;
     if Assigned(LParagraph) then
     begin
-      LParagraph.Layout(AWidth);
+      LMaxWidthUsed := DoParagraphLayout(LParagraph, AMaxWidth);
       if Assigned(FParagraphStroked) then
-        FParagraphStroked.Layout(AWidth);
-      FParagraphLayoutWidth := AWidth;
+        FParagraphStroked.Layout(LMaxWidthUsed);
+      FParagraphLayoutWidth := AMaxWidth;
       FParagraphBounds := TRectF.Empty;
       FBackgroundPicture := nil;
     end;
@@ -6008,18 +6131,6 @@ begin
   FWords.Assign(AValue);
 end;
 
-procedure TSkLabel.SetWordsMouseOver(const AValue: TCustomWordsItem);
-begin
-  if FWordsMouseOver <> AValue then
-  begin
-    FWordsMouseOver := AValue;
-    if not (csDesigning in ComponentState) and IsMouseOver then
-      UpdateCursor;
-  end
-  else
-    UpdateCursor;
-end;
-
 procedure TSkLabel.TextSettingsChanged(AValue: TObject);
 begin
   DeleteParagraph;
@@ -6047,6 +6158,27 @@ begin
   end;
 end;
 
+procedure TSkLabel.UpdateWordsMouseOver;
+
+  procedure SetWordsMouseOver(const AValue: TCustomWordsItem);
+  begin
+    if FWordsMouseOver <> AValue then
+    begin
+      FWordsMouseOver := AValue;
+      if not (csDesigning in ComponentState) and IsMouseOver then
+        UpdateCursor;
+    end
+    else
+      UpdateCursor;
+  end;
+
+begin
+  if FHasCustomCursor and IsMouseOver then
+    SetWordsMouseOver(GetWordsItemAtPosition(FLastMousePosition.X, FLastMousePosition.Y))
+  else
+    SetWordsMouseOver(nil);
+end;
+
 type
   TControlAccess = class(TControl);
 
@@ -6072,13 +6204,16 @@ end;
 procedure TSkLabel.WMLButtonUp(var AMessage: TWMLButtonUp);
 begin
   FClickedPosition := Point(AMessage.XPos, AMessage.YPos);
+  FLastMousePosition := FClickedPosition;
   inherited;
+  UpdateWordsMouseOver;
 end;
 
 procedure TSkLabel.WMMouseMove(var AMessage: TWMMouseMove);
 begin
+  FLastMousePosition := Point(AMessage.XPos, AMessage.YPos);
   if FHasCustomCursor then
-    SetWordsMouseOver(GetWordsItemAtPosition(AMessage.XPos, AMessage.YPos));
+    UpdateWordsMouseOver;
   inherited;
 end;
 
