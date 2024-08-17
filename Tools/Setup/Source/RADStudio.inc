@@ -6,7 +6,7 @@
 {                                                                        }
 {                              Skia4Delphi                               }
 {                                                                        }
-{ Copyright (c) 2021-2023 Skia4Delphi Project.                           }
+{ Copyright (c) 2021-2024 Skia4Delphi Project.                           }
 {                                                                        }
 { Use of this source code is governed by the MIT license that can be     }
 { found in the LICENSE file.                                             }
@@ -33,7 +33,6 @@ type
     GetItCmdUninstallParams: string;
     DotNetVersion: TDotNetVersion;
     DotNetServicePack: Cardinal;
-    BuildConfig: TProjectConfig;
   end;
 
   TRADStudioInstallationStatus = (riNotFound, riNeedOpenFirst, riToolchainNotSupported, riNormal);
@@ -42,6 +41,7 @@ type
     AppFileName: string;
     BdsCommonDir: string;
     BdsInclude: string;
+    BuildConfig: TProjectConfig;
     RootDir: string;
     Status: TRADStudioInstallationStatus;
     Version: TRADStudioVersion;
@@ -151,25 +151,13 @@ begin
 end;
 
 function CompareRADStudioVersion(const ARADStudioVersion: TRADStudioVersion; const ARegVersion: string): Integer;
-var
-  LVersion1, LVersion2: Int64;
 begin
-  if not StrToVersion(ARADStudioVersion.RegVersion, LVersion1) then
-    RaiseException(FmtMessage('RADStudio.CompareRADStudioVersion: Invalid version "%1"', [ARADStudioVersion.RegVersion]));
-  if not StrToVersion(ARegVersion, LVersion2) then
-    RaiseException(FmtMessage('RADStudio.CompareRADStudioVersion: Invalid version "%1"', [ARegVersion]));
-  Result := ComparePackedVersion(LVersion1, LVersion2);
+  Result := CompareVersions(ARADStudioVersion.RegVersion, ARegVersion);
 end;
 
 function CompareRADStudioVersions(const AVersion1, AVersion2: TRADStudioVersion): Integer;
-var
-  LVersion1, LVersion2: Int64;
 begin
-  if not StrToVersion(AVersion1.RegVersion, LVersion1) then
-    RaiseException(FmtMessage('RADStudio.CompareRADStudioVersions: Invalid version "%1"', [AVersion1.RegVersion]));
-  if not StrToVersion(AVersion2.RegVersion, LVersion2) then
-    RaiseException(FmtMessage('RADStudio.CompareRADStudioVersions: Invalid version "%1"', [AVersion2.RegVersion]));
-  Result := ComparePackedVersion(LVersion1, LVersion2);
+  Result := CompareVersions(AVersion1.RegVersion, AVersion2.RegVersion);
 end;
 
 function _FilterAllowedRADStudioVersions(const ARADStudioVersions: _TRADStudioVersions): _TRADStudioVersions;
@@ -239,7 +227,6 @@ begin
       if StrToVersion(LNames[I], LVersion) and (LVersion > LMaxKnownVersion) then
       begin
         LRADStudioVersion := LMaxKnownRADStudioVersion;
-        LRADStudioVersion.BuildConfig := pcDebug;
         LRADStudioVersion.RegVersion := LNames[I];
         if (not RegQueryStringValue(HKEY_CURRENT_USER, GetRADStudioRegKey(LRADStudioVersion), 'ProductVersion', LProductVersion)) or
           not _TryGetRADStudioPackageVersionByProductVersion(LProductVersion, LRADStudioVersion.PackageVersion) then
@@ -279,11 +266,13 @@ end;
 
 function GetRADStudioInfo(const ARADStudioVersion: TRADStudioVersion): TRADStudioInfo;
 var
+  LBdsLib: string;
   LResultCode: Integer;
 begin
   Result.Version := ARADStudioVersion;
   Result.BdsCommonDir := '';
   Result.BdsInclude := '';
+  Result.BuildConfig := pcRelease;
   if _TryGetRADStudioInstallation(ARADStudioVersion, HKEY_CURRENT_USER, Result.AppFileName, Result.RootDir) then
   begin
     if (not Exec(ExpandConstant('{cmd}'), Format('/C "%s" --test > nul 2>&1', [ExtractFilePath(Result.AppFileName) + 'DCC32.EXE']), '', SW_HIDE, ewWaitUntilTerminated, LResultCode)) or (LResultCode = 0) then
@@ -297,6 +286,15 @@ begin
       _TryGetRADStudioEnvVar(ARADStudioVersion, 'BDSINCLUDE', Result.BdsInclude);
       if not DirExists(Result.BdsInclude) then
         Result.BdsInclude := '';
+      // Some beta / internal versions does not have release libs
+      if _TryGetRADStudioEnvVar(ARADStudioVersion, 'BDSLIB', LBdsLib) then
+      begin
+        if FileExists(CombinePath(LBdsLib, 'win32\debug\rtl.dcp')) and
+          not FileExists(CombinePath(LBdsLib, 'win32\release\rtl.dcp')) then
+        begin
+          Result.BuildConfig := pcDebug;
+        end;
+      end;
     end;
   end
   else if _TryGetRADStudioInstallation(ARADStudioVersion, HKEY_LOCAL_MACHINE, Result.AppFileName, Result.RootDir) then
@@ -416,7 +414,6 @@ begin
   LRADStudioVersion.GetItCmdUninstallParams := '';
   LRADStudioVersion.DotNetVersion := net35;
   LRADStudioVersion.DotNetServicePack := 1;
-  LRADStudioVersion.BuildConfig := pcRelease;
   SetArrayLength(_FRADStudioVersions, GetArrayLength(_FRADStudioVersions) + 1);
   _FRADStudioVersions[GetArrayLength(_FRADStudioVersions) - 1] := LRADStudioVersion;
 
@@ -433,7 +430,6 @@ begin
   LRADStudioVersion.GetItCmdUninstallParams := '';
   LRADStudioVersion.DotNetVersion := net35;
   LRADStudioVersion.DotNetServicePack := 1;
-  LRADStudioVersion.BuildConfig := pcRelease;
   SetArrayLength(_FRADStudioVersions, GetArrayLength(_FRADStudioVersions) + 1);
   _FRADStudioVersions[GetArrayLength(_FRADStudioVersions) - 1] := LRADStudioVersion;
 
@@ -450,7 +446,6 @@ begin
   LRADStudioVersion.GetItCmdUninstallParams := '';
   LRADStudioVersion.DotNetVersion := net35;
   LRADStudioVersion.DotNetServicePack := 1;
-  LRADStudioVersion.BuildConfig := pcRelease;
   SetArrayLength(_FRADStudioVersions, GetArrayLength(_FRADStudioVersions) + 1);
   _FRADStudioVersions[GetArrayLength(_FRADStudioVersions) - 1] := LRADStudioVersion;
 
@@ -467,7 +462,6 @@ begin
   LRADStudioVersion.GetItCmdUninstallParams := '';
   LRADStudioVersion.DotNetVersion := net35;
   LRADStudioVersion.DotNetServicePack := 1;
-  LRADStudioVersion.BuildConfig := pcRelease;
   SetArrayLength(_FRADStudioVersions, GetArrayLength(_FRADStudioVersions) + 1);
   _FRADStudioVersions[GetArrayLength(_FRADStudioVersions) - 1] := LRADStudioVersion;
 
@@ -484,7 +478,6 @@ begin
   LRADStudioVersion.GetItCmdUninstallParams := '-u"%s"';
   LRADStudioVersion.DotNetVersion := net35;
   LRADStudioVersion.DotNetServicePack := 1;
-  LRADStudioVersion.BuildConfig := pcRelease;
   SetArrayLength(_FRADStudioVersions, GetArrayLength(_FRADStudioVersions) + 1);
   _FRADStudioVersions[GetArrayLength(_FRADStudioVersions) - 1] := LRADStudioVersion;
 
@@ -501,7 +494,6 @@ begin
   LRADStudioVersion.GetItCmdUninstallParams := '-u="%s" -dnsef';
   LRADStudioVersion.DotNetVersion := net45;
   LRADStudioVersion.DotNetServicePack := 0;
-  LRADStudioVersion.BuildConfig := pcRelease;
   SetArrayLength(_FRADStudioVersions, GetArrayLength(_FRADStudioVersions) + 1);
   _FRADStudioVersions[GetArrayLength(_FRADStudioVersions) - 1] := LRADStudioVersion;
 
@@ -518,7 +510,6 @@ begin
   LRADStudioVersion.GetItCmdUninstallParams := '-u="%s" -dnsef';
   LRADStudioVersion.DotNetVersion := net45;
   LRADStudioVersion.DotNetServicePack := 0;
-  LRADStudioVersion.BuildConfig := pcRelease;
   SetArrayLength(_FRADStudioVersions, GetArrayLength(_FRADStudioVersions) + 1);
   _FRADStudioVersions[GetArrayLength(_FRADStudioVersions) - 1] := LRADStudioVersion;
 
@@ -535,7 +526,22 @@ begin
   LRADStudioVersion.GetItCmdUninstallParams := '-u="%s" -dnsef';
   LRADStudioVersion.DotNetVersion := net45;
   LRADStudioVersion.DotNetServicePack := 0;
-  LRADStudioVersion.BuildConfig := pcRelease;
+  SetArrayLength(_FRADStudioVersions, GetArrayLength(_FRADStudioVersions) + 1);
+  _FRADStudioVersions[GetArrayLength(_FRADStudioVersions) - 1] := LRADStudioVersion;
+
+  // RAD Studio 12 Athens
+  LRADStudioVersion.Name := 'RAD Studio 12 Athens';
+  LRADStudioVersion.RegVersion := '23.0';
+  LRADStudioVersion.SupportedPlatformsDelphi := [pfWin32, pfWin64, pfAndroid, pfAndroid64, pfiOSDevice64, pfiOSSimARM64, pfiOSSimulator, pfOSX64, pfOSXARM64, pfLinux64];
+  LRADStudioVersion.SupportedPlatforms := LRADStudioVersion.SupportedPlatformsDelphi;
+  LRADStudioVersion.MaxDprojVersion := '20.1';
+  LRADStudioVersion.MinDprojVersion := '20.1';
+  LRADStudioVersion.PackageVersion := '290';
+  LRADStudioVersion.HasGetItCmd := True;
+  LRADStudioVersion.GetItCmdListInstalledParams := '-l="%s" -dnsef';
+  LRADStudioVersion.GetItCmdUninstallParams := '-u="%s" -dnsef';
+  LRADStudioVersion.DotNetVersion := net45;
+  LRADStudioVersion.DotNetServicePack := 0;
   SetArrayLength(_FRADStudioVersions, GetArrayLength(_FRADStudioVersions) + 1);
   _FRADStudioVersions[GetArrayLength(_FRADStudioVersions) - 1] := LRADStudioVersion;
 
@@ -630,12 +636,12 @@ begin
     begin
       LPathsToInsert := SplitString(APath, ';');
       LCurrentPaths := SplitString(LNewValue, ';');
-      for I := 0 to GetArrayLength(LPathsToInsert) - 1 do
+      for I := GetArrayLength(LPathsToInsert) - 1 downto 0 do
       begin
         LNewValue := LPathsToInsert[I];
         LCurrentPaths := RemoveString(LCurrentPaths, LNewValue, False);
         LCurrentPaths := RemoveString(LCurrentPaths, LNewValue + '\', False);
-        LCurrentPaths := AppendString(LCurrentPaths, LNewValue, False);
+        LCurrentPaths := InsertString(0, LCurrentPaths, LNewValue, False);
       end;
       LNewValue := JoinStrings(LCurrentPaths, ';', False);
     end;
@@ -792,7 +798,7 @@ begin
     Result := False
   else
   begin
-    ARsvarsFileName := AddBackslash(ARADStudioInfo.RootDir) + 'bin\rsvars.bat';
+    ARsvarsFileName := CombinePath(ExtractFilePath(ARADStudioInfo.AppFileName), 'rsvars.bat');
     Result := FileExists(ARsvarsFileName);
   end;
   if not Result then

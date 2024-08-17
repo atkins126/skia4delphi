@@ -2,7 +2,7 @@
 {                                                                        }
 {                              Skia4Delphi                               }
 {                                                                        }
-{ Copyright (c) 2021-2023 Skia4Delphi Project.                           }
+{ Copyright (c) 2021-2024 Skia4Delphi Project.                           }
 {                                                                        }
 { Use of this source code is governed by the MIT license that can be     }
 { found in the LICENSE file.                                             }
@@ -34,6 +34,9 @@ type
   public
     property StencilBits: Integer read FStencilBits;
   end;
+
+var
+  GlobalUseSkiaGLSwapInterval: Integer;
 
 implementation
 
@@ -316,10 +319,10 @@ begin
     if not TryMakeCurrent then
       Exit;
     {$IF DEFINED(ANDROID)}
-    eglSwapInterval(TGlSharedContext(SharedContext).Display, 0);
+    eglSwapInterval(TGlSharedContext(SharedContext).Display, GlobalUseSkiaGLSwapInterval);
     {$ELSEIF DEFINED(MSWINDOWS)}
     if TGlSharedContext(SharedContext).GlInterface.HasExtension(FDC, 'WGL_EXT_swap_control') then
-      TGlSharedContext(SharedContext).GlInterface.SwapIntervalEXT(0);
+      TGlSharedContext(SharedContext).GlInterface.SwapIntervalEXT(GlobalUseSkiaGLSwapInterval);
     {$ENDIF}
     FGrDirectContext := TGrDirectContext.MakeGl(TGlSharedContext(SharedContext).GrGlInterface);
     Result           := FGrDirectContext <> nil;
@@ -1140,9 +1143,11 @@ end;
 
 {$HPPEMIT END '#if !defined(DELPHIHEADER_NO_IMPLICIT_NAMESPACE_USE) && !defined(NO_USING_NAMESPACE_FMX_SKIA_CANVAS_GL)'}
 {$HPPEMIT END '    using ::Fmx::Skia::Canvas::Gl::TGlSharedContextCustom;'}
+{$HPPEMIT END '    using ::Fmx::Skia::Canvas::Gl::GlobalUseSkiaGLSwapInterval;'}
 {$HPPEMIT END '#endif'}
 
 initialization
+  GlobalUseSkiaGLSwapInterval := {$IFDEF ANDROID}1{$ELSE}0{$ENDIF};
   RegisterSkiaRenderCanvas(TGlCanvas, False,
     function: Boolean
     begin

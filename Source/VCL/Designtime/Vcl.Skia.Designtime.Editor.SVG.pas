@@ -2,7 +2,7 @@
 {                                                                        }
 {                              Skia4Delphi                               }
 {                                                                        }
-{ Copyright (c) 2021-2023 Skia4Delphi Project.                           }
+{ Copyright (c) 2021-2024 Skia4Delphi Project.                           }
 {                                                                        }
 { Use of this source code is governed by the MIT license that can be     }
 { found in the LICENSE file.                                             }
@@ -146,7 +146,7 @@ end;
 procedure TSkSvgEditorForm.btnSaveClick(ASender: TObject);
 begin
   if sdgSaveDialog.Execute then
-    memSource.Lines.SaveToFile(sdgSaveDialog.FileName, TEncoding.UTF8);
+    memSource.Lines.SaveToFile(sdgSaveDialog.FileName);
 end;
 
 procedure TSkSvgEditorForm.CreateWnd;
@@ -163,6 +163,7 @@ end;
 
 procedure TSkSvgEditorForm.FormCreate(ASender: TObject);
 begin
+  memSource.Lines.DefaultEncoding := TEncoding.UTF8;
   {$IF CompilerVersion >= 34}
   if IDEThemeAvailable then
   begin
@@ -237,7 +238,7 @@ end;
 procedure TSkSvgEditorForm.LoadFromFile(const AFileName: string);
 begin
   if TFile.Exists(AFileName) then
-    memSource.Lines.LoadFromFile(AFileName, TEncoding.UTF8);
+    memSource.Lines.LoadFromFile(AFileName);
 end;
 
 procedure TSkSvgEditorForm.memSourceChange(ASender: TObject);

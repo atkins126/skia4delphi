@@ -3,7 +3,7 @@
 {                                                                        }
 {                              Skia4Delphi                               }
 {                                                                        }
-{ Copyright (c) 2021-2023 Skia4Delphi Project.                           }
+{ Copyright (c) 2021-2024 Skia4Delphi Project.                           }
 {                                                                        }
 { Use of this source code is governed by the MIT license that can be     }
 { found in the LICENSE file.                                             }
@@ -13,14 +13,14 @@
 {                          Custom Parameters                             }
 {                                                                        }
 { /RADStudioVersions=                                                    }
-{   Values allowed: 9.0 to 22.0 separed by comma or all keyword          }
+{   Values allowed: 9.0 to 23.0 separed by comma or all keyword          }
 {   Default: (latest version found in computer)                          }
 {   Description: The version used is the product version in resgistry,   }
-{     i.e, the RAD Studio 10.3 Rio is "20.0", the RAD Studio 10.4 Sydney }
-{     is "21.0", etc. This is used to set the RAD Studio versions, in    }
-{     silent mode, that will installed the library.                      }
-{     Ex: /RADStudioVersions=21.0,22.0 will install only in              }
-{     RAD Studio 11 Alexandria and 10.4 Sydney. But if the parameter is  }
+{     i.e, the RAD Studio 11 Alexandria is "22.0", the RAD Studio 12     }
+{     Athens is "23.0", etc. This is used to set the RAD Studio          }
+{     versions, in silent mode, that will installed the library.         }
+{     Ex: /RADStudioVersions=23.0,22.0 will install only in              }
+{     RAD Studio 12 Athens and 11 Alexandria. But if the parameter is    }
 {     /RADStudioVersions=all will install in all RAD Studio installed in }
 {     the machine. Without set this parameter, the value will be only    }
 {     the newest RAD Studio version found on the machine. A cool tip of  }
@@ -38,13 +38,13 @@
 {************************************************************************}
 {                                                                        }
 { Example of command line to install in silent mode:                     }
-{   cmd /C ""Skia4Delphi_6.0.0-beta5_Setup.exe" /DIR="C:\Skia4Delphi" /SILENT  }
+{   cmd /C ""Skia4Delphi_6.2.0_Setup.exe" /DIR="C:\Skia4Delphi" /SILENT  }
 {     /RADStudioVersions=all"                                            }
 {                                                                        }
 { In GetIt implementation, the installation command could be:            }
-{   cmd /C ""$(BDSCatalogRepository)\Skia4Delphi-6.0.0-beta5\                  }
-{     Skia4Delphi_6.0.0-beta5_Setup.exe"                                       }
-{     /DIR="$(BDSCatalogRepository)\Skia4Delphi-6.0.0-beta5" /VERYSILENT       }
+{   cmd /C ""$(BDSCatalogRepository)\Skia4Delphi-6.2.0\                  }
+{     Skia4Delphi_6.2.0_Setup.exe"                                       }
+{     /DIR="$(BDSCatalogRepository)\Skia4Delphi-6.2.0" /VERYSILENT       }
 {     /RADStudioVersions=$(ProductVersion) /CreateUninstallRegKey=no"    }
 {                                                                        }
 { Example of command line to uninstall in silent mode:                   }
@@ -52,15 +52,15 @@
 {     /RADStudioVersions=all"                                            }
 {                                                                        }
 { In GetIt implementation, the uninstall command could be:               }
-{   cmd /C ""$(BDSCatalogRepository)\Skia4Delphi-6.0.0-beta5\unins000.exe"     }
+{   cmd /C ""$(BDSCatalogRepository)\Skia4Delphi-6.2.0\unins000.exe"     }
 {     /VERYSILENT /RADStudioVersions=$(ProductVersion)"                  }
 {                                                                        }
 {************************************************************************}
 
 #define LibraryName "Skia4Delphi"
-#define LibraryVersion "6.0.0-beta5"
+#define LibraryVersion "6.2.0"
 #define LibraryPublisher "Skia4Delphi Team"
-#define LibraryCopyright "Copyright (c) 2021-2023 Skia4Delphi Project"
+#define LibraryCopyright "Copyright (c) 2021-2024 Skia4Delphi Project"
 #define LibraryURL "https://skia4delphi.org"
 #define LibrarySamplesFolder "Samples"
 #define LibraryPackagesFolder "Packages"
@@ -169,7 +169,7 @@ Name: "ukrainian"; MessagesFile: "compiler:Languages\Ukrainian.isl,Languages\Def
   [Files]
     Source: "Style\*"; DestDir: "{app}\{#SetupFolder}\Style"; Flags: ignoreversion
     Source: "..\..\{#LibraryPackagesFolder}\*"; Excludes: "{#CommonRADStudioFilesExcludes}"; DestDir: "{app}\{#LibraryPackagesFolder}"; Flags: recursesubdirs ignoreversion
-    Source: "..\..\*"; Excludes: "{#CommonRADStudioFilesExcludes},*.gitattributes,*.gitignore,*.gitmodules,README.md,\.github\*,\.history\*,\Assets\Artwork\*,\Assets\Documents\*,\Assets\Setup\*,Binary\*,\Documents\*,\Externals\*,\{#LibraryDCUFolder}\*,Logs\*,*.Logs.txt,Objects\*,\{#SetupFolder}\*,\Tools\Chocolatey Package\*,\{#LibraryPackagesFolder}\*"; DestDir: "{app}"; Flags: recursesubdirs ignoreversion
+    Source: "..\..\*"; Excludes: "{#CommonRADStudioFilesExcludes},*.gitattributes,*.gitignore,*.gitmodules,README.md,\.github\*,\.history\*,\Assets\Artwork\*,\Assets\Documents\*,\Assets\Setup\*,Binary\*,\Documents\*,\Externals\*,\{#LibraryDCUFolder}\*,Logs\*,*.Logs.txt,Objects\*,\{#SetupFolder}\*,\Tools\Chocolatey Package\*,\{#LibraryPackagesFolder}\*,\Tests\Assets\Expected.zip"; DestDir: "{app}"; Flags: recursesubdirs ignoreversion
     Source: "..\..\Samples\*.template.xml"; DestDir: "{app}\Samples"; Flags: recursesubdirs ignoreversion
     Source: "..\..\Binary\*"; DestDir: "{app}\Binary"; Flags: recursesubdirs ignoreversion
     #ifdef UseLibraryDCUFolder

@@ -6,7 +6,7 @@
 {                                                                        }
 {                              Skia4Delphi                               }
 {                                                                        }
-{ Copyright (c) 2021-2023 Skia4Delphi Project.                           }
+{ Copyright (c) 2021-2024 Skia4Delphi Project.                           }
 {                                                                        }
 { Use of this source code is governed by the MIT license that can be     }
 { found in the LICENSE file.                                             }
@@ -58,7 +58,7 @@ var
 
 function _GetLibraryStaticPlatforms: TProjectPlatforms;
 begin
-  Result := [pfiOSDevice64, pfiOSSimARM64];
+  Result := [pfAndroid, pfAndroid64, pfiOSDevice64, pfiOSSimARM64, pfOSX64, pfOSXARM64];
 end;
 
 procedure _OnBeforeProjectBuild(const AProject: TRADStudioProject; const APlatform: TProjectPlatform; const AInfo: TRADStudioInfo);
@@ -71,7 +71,7 @@ var
 begin
   // Check if it is newer than RAD Studio 11 Alexandria
   if CompareRADStudioVersion(AInfo.Version, '22.0') > 0 then
-  begin 
+  begin
     // Try copy exclusive units from RAD Studio source to recompile it
     if SameText(ExtractFileName(AProject.FileName), 'Skia.Package.FMX.dproj') and (APlatform = LowProjectPlatform) and (GetArrayLength(AProject.SourcePaths) > 0) then
     begin
@@ -79,6 +79,8 @@ begin
       StringChangeEx(LSourcePath, LibraryDirDefine, '{app}', True);
       LSourcePath := ExpandConstant(LSourcePath);
       LNativeSkiaUnits := GetFiles(CombinePath(AInfo.RootDir, 'Source\FMX\'), 'FMX.Skia.*.pas', soTopDirectoryOnly);
+      if GetArrayLength(LNativeSkiaUnits) = 0 then
+        LNativeSkiaUnits := GetFiles(CombinePath(AInfo.RootDir, 'runtime\Skia4Delphi\Source\FMX\'), 'FMX.Skia.*.pas', soTopDirectoryOnly);
       Log(Format('Skia4Delphi._OnBeforeProjectBuild: copying exclusive files to "%s"', [LSourcePath]));
       for I := 0 to GetArrayLength(LNativeSkiaUnits) - 1 do
       begin

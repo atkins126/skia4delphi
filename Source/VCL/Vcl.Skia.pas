@@ -2,7 +2,7 @@
 {                                                                        }
 {                              Skia4Delphi                               }
 {                                                                        }
-{ Copyright (c) 2021-2023 Skia4Delphi Project.                           }
+{ Copyright (c) 2021-2024 Skia4Delphi Project.                           }
 {                                                                        }
 { Use of this source code is governed by the MIT license that can be     }
 { found in the LICENSE file.                                             }
@@ -1269,6 +1269,8 @@ type
   strict private
     FBuffer: TBitmap;
     FBufferOpacity: Byte;
+    FData: TMemoryStream;
+    FFormat: TSkEncodedImageFormat;
     FImage: ISkImage;
     function GetBuffer(const ASize: TSize; const AOpacity: Byte): TBitmap;
   strict protected
@@ -1283,6 +1285,7 @@ type
     procedure SetHeight(AValue: Integer); override;
     procedure SetWidth(AValue: Integer); override;
   public
+    constructor Create; override;
     destructor Destroy; override;
     procedure Assign(ASource: TPersistent); override;
     {$IF CompilerVersion >= 32}
@@ -1319,6 +1322,9 @@ type
     constructor Create; override;
     destructor Destroy; override;
     procedure Assign(ASource: TPersistent); override;
+    {$IF CompilerVersion >= 32}
+    class function CanLoadFromStream(AStream: TStream): Boolean; override;
+    {$ENDIF}
     procedure LoadFromClipboardFormat(AFormat: Word; AData: THandle; APalette: HPALETTE); override;
     procedure LoadFromStream(AStream: TStream); override;
     procedure SaveToClipboardFormat(var AFormat: Word; var AData: THandle; var APalette: HPALETTE); override;
@@ -1352,6 +1358,13 @@ type
 function BitmapToSkImage(const ABitmap: TBitmap): ISkImage;
 begin
   Result := ABitmap.ToSkImage;
+end;
+
+function CeilFloat(const X: Single): Single;
+begin
+  Result := Int(X);
+  if Frac(X) > 0 then
+    Result := Result + 1;
 end;
 
 procedure CreateBuffer(const AMemDC: HDC; const AWidth, AHeight: Integer;
@@ -2685,7 +2698,7 @@ begin
         if TSkGlControlRender.IsSupported then
           Result := TSkGlControlRender.Create(ATarget)
         else
-          Result := TSkRasterControlRender.Create(ATarget);;
+          Result := TSkRasterControlRender.Create(ATarget);
       end;
   else
     Result := nil;
@@ -5720,7 +5733,7 @@ procedure TSkLabel.GetFitSize(var AWidth, AHeight: Single);
     if (akTop in Anchors) and (akBottom in Anchors) then
       Result := AHeight
     else
-      Result := Ceil(ParagraphBounds.Height * ScaleFactor);
+      Result := CeilFloat(ParagraphBounds.Height * ScaleFactor);
   end;
 
   function GetFitWidth: Single;
@@ -5728,7 +5741,7 @@ procedure TSkLabel.GetFitSize(var AWidth, AHeight: Single);
     if (akLeft in Anchors) and (akRight in Anchors) then
       Result := AWidth
     else
-      Result := Ceil(ParagraphBounds.Width * ScaleFactor);
+      Result := CeilFloat(ParagraphBounds.Width * ScaleFactor);
   end;
 
 var
@@ -5740,7 +5753,7 @@ begin
     if (akLeft in Anchors) and (akRight in Anchors) then
       ParagraphLayout(AWidth / ScaleFactor)
     else
-      ParagraphLayout(High(Integer));
+      ParagraphLayout(Infinity);
   end;
   try
     AWidth := GetFitWidth;
@@ -5864,8 +5877,8 @@ var
       Result.TextDirection := TSkTextDirection.RightToLeft;
     if ResultingTextSettings.Trimming in [TSkTextTrimming.Character, TSkTextTrimming.Word] then
       Result.Ellipsis := '...';
-    if ResultingTextSettings.MaxLines = 0 then
-      Result.MaxLines := High(Integer)
+    if (ResultingTextSettings.MaxLines <= 0) or (ResultingTextSettings.MaxLines = High(NativeUInt)) then
+      Result.MaxLines := High(NativeUInt) - 1
     else
       Result.MaxLines := ResultingTextSettings.MaxLines;
     Result.TextAlign := SkTextAlign[ResultingTextSettings.HorzAlign];
@@ -6059,23 +6072,26 @@ end;
 
 procedure TSkLabel.ParagraphLayout(AMaxWidth: Single);
 
-  function DoParagraphLayout(const AParagraph: ISkParagraph; AMaxWidth: Single): Single;
+  function DoParagraphLayout(const AParagraph: ISkParagraph; const AMaxWidth: Single): Single;
   begin
-    if SameValue(AMaxWidth, 0, TEpsilon.Position) then
-      Result := AMaxWidth
+    if CompareValue(AMaxWidth, 0, TEpsilon.Position) = GreaterThanValue then
+    begin
+      if IsInfinite(AMaxWidth) then
+        Result := AMaxWidth
+      else
+        // The SkParagraph.Layout calls a floor for the MaxWidth, so we should ceil it to force the original AMaxWidth
+        Result := CeilFloat(AMaxWidth + TEpsilon.Matrix);
+    end
     else
-      // The SkParagraph.Layout calls a floor for the MaxWidth, so we should ceil it to force the original AMaxWidth
-      Result := Ceil(AMaxWidth + TEpsilon.Matrix);
+      Result := 0;
     AParagraph.Layout(Result);
   end;
 
-const
-  MaxLayoutWidth = High(Integer) - High(Word);
 var
   LMaxWidthUsed: Single;
   LParagraph: ISkParagraph;
 begin
-  AMaxWidth := EnsureRange(AMaxWidth, 0, MaxLayoutWidth);
+  AMaxWidth := Max(AMaxWidth, 0);
   if not SameValue(FParagraphLayoutWidth, AMaxWidth, TEpsilon.Position) then
   begin
     LParagraph := Paragraph;
@@ -6273,12 +6289,18 @@ end;
 { TSkGraphic }
 
 procedure TSkGraphic.Assign(ASource: TPersistent);
+var
+  LGraphic: TSkGraphic absolute ASource;
 begin
   if ASource is TSkGraphic then
   begin
-    if TObject(FImage) <> TObject(TSkGraphic(ASource).FImage) then
+    if TObject(FImage) <> TObject(LGraphic.FImage) then
     begin
-      FImage := TSkGraphic(ASource).FImage;
+      FImage := LGraphic.FImage;
+      FFormat := LGraphic.FFormat;
+      FData.Clear;
+      LGraphic.FData.Position := 0;
+      FData.CopyFrom(LGraphic.FData, 0);
       Changed(Self);
     end;
   end
@@ -6310,9 +6332,16 @@ begin
   inherited;
 end;
 
+constructor TSkGraphic.Create;
+begin
+  inherited;
+  FData := TMemoryStream.Create;
+end;
+
 destructor TSkGraphic.Destroy;
 begin
   FBuffer.Free;
+  FData.Free;
   inherited;
 end;
 
@@ -6432,8 +6461,20 @@ begin
 end;
 
 procedure TSkGraphic.LoadFromStream(AStream: TStream);
+var
+  LCodec: ISkCodec;
 begin
-  FImage := TSkImage.MakeFromEncodedStream(AStream);
+  FData.Clear;
+  FData.CopyFrom(AStream, AStream.Size - AStream.Position);
+  FData.Position := 0;
+  LCodec := TSkCodec.MakeFromStream(FData);
+  if LCodec <> nil then
+  begin
+    FFormat := LCodec.EncodedImageFormat;
+    FImage := LCodec.GetImage(SkNative32ColorType);
+  end
+  else
+    FImage := nil;
   Changed(Self);
 end;
 
@@ -6444,17 +6485,22 @@ end;
 
 procedure TSkGraphic.SaveToFile(const AFileName: string);
 begin
-  if AFilename.EndsText(AFileName, '.jpg') or AFilename.EndsText(AFileName, '.jpeg') then
-    FImage.EncodeToFile(AFileName, TSkEncodedImageFormat.JPEG)
-  else if AFilename.EndsText(AFileName, '.webp') then
-    FImage.EncodeToFile(AFileName, TSkEncodedImageFormat.WEBP)
-  else
-    FImage.EncodeToFile(AFileName);
+  if FImage <> nil then
+  begin
+    if ExtensionToEncodedImageFormat(AFileName) = FFormat then
+      FData.SaveToFile(AFileName)
+    else
+      FImage.EncodeToFile(AFileName);
+  end;
 end;
 
 procedure TSkGraphic.SaveToStream(AStream: TStream);
 begin
-  FImage.EncodeToStream(AStream);
+  if FImage <> nil then
+  begin
+    FData.Position := 0;
+    AStream.CopyFrom(FData, 0);
+  end;
 end;
 
 procedure TSkGraphic.SetHeight(AValue: Integer);
@@ -6498,6 +6544,37 @@ begin
   else
     inherited;
 end;
+
+{$IF CompilerVersion >= 32}
+class function TSkSvgGraphic.CanLoadFromStream(AStream: TStream): Boolean;
+var
+  LBytes: TBytes;
+  LSource: string;
+  LSavedPosition: Int64;
+begin
+  LSavedPosition := AStream.Position;
+  try
+    Result := False;
+    SetLength(LBytes, Min(256, AStream.Size - AStream.Position));
+    if Length(LBytes) > 0 then
+    begin
+      AStream.ReadBuffer(LBytes, Length(LBytes));
+      {$IF CompilerVersion >= 36}
+      if TEncoding.UTF8.IsBufferValid(LBytes) then
+      {$ELSE}
+      if TEncoding.UTF8.GetCharCount(LBytes) > 0 then
+      {$ENDIF}
+      begin
+        LSource := TEncoding.UTF8.GetString(LBytes).TrimLeft;
+        Result := (LSource.StartsWith('<?xml') and LSource.Contains('<svg')) or
+          LSource.StartsWith('<svg');
+      end;
+    end;
+  finally
+    AStream.Position := LSavedPosition;
+  end;
+end;
+{$ENDIF}
 
 procedure TSkSvgGraphic.Changed(ASender: TObject);
 begin
@@ -6637,14 +6714,13 @@ end;
   {$HPPEMIT '#elif defined(__WIN32__)'}
   {$HPPEMIT '  #pragma link "Skia.Package.VCL.lib"'}
   {$HPPEMIT '#elif defined(_WIN64)'}
-  {$HPPEMIT '  #pragma link "Skia.Package.VCL.a"'}
+  {$HPPEMIT '  #if (__clang_major__ >= 15)'}
+  {$HPPEMIT '    #pragma link "Skia.Package.VCL.lib"'}
+  {$HPPEMIT '  #else'}
+  {$HPPEMIT '    #pragma link "Skia.Package.VCL.a"'}
+  {$HPPEMIT '  #endif'}
   {$HPPEMIT '#endif'}
-{$ENDIF}
-
-{$IF DEFINED(WIN32)}
-  {$HPPEMIT '#pragma link "Vcl.Skia.obj"'}
-{$ELSEIF DEFINED(WIN64)}
-  {$HPPEMIT '#pragma link "Vcl.Skia.o"'}
+  {$HPPEMIT '#pragma link "Vcl.Skia"'}
 {$ENDIF}
 
 {$HPPEMIT NOUSINGNAMESPACE}

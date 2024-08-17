@@ -2,7 +2,7 @@
 {                                                                        }
 {                              Skia4Delphi                               }
 {                                                                        }
-{ Copyright (c) 2021-2023 Skia4Delphi Project.                           }
+{ Copyright (c) 2021-2024 Skia4Delphi Project.                           }
 {                                                                        }
 { Use of this source code is governed by the MIT license that can be     }
 { found in the LICENSE file.                                             }
@@ -1294,6 +1294,9 @@ var
   /// <summary> Disables registration of Skia image codecs </summary>
   GlobalDisableSkiaCodecsReplacement: Boolean;
   {$IF CompilerVersion >= 36}
+  /// <summary> Enables the execution of FMX filters/effects by Skia </summary>
+  /// <remarks> This option is only valid when the Canvas is Skia based and uses a GPU </remarks>
+  GlobalUseSkiaFilters: Boolean = True;
   /// <summary> Enables TBitmaps to be drawn in true parallel to UI and other bitmaps, when drawing in a thread (only takes effect when GlobalUseSkia is True) [Experimental] </summary>
   GlobalSkiaBitmapsInParallel: Boolean;
   {$ENDIF}
@@ -1419,7 +1422,9 @@ type
   {$ENDIF}
 
 const
-  SkFontSlant: array[TFontSlant] of TSkFontSlant = (TSkFontSlant.Upright, TSkFontSlant.Italic, TSkFontSlant.Oblique);
+  SkFontSlant : array[TFontSlant] of TSkFontSlant = (TSkFontSlant.Upright, TSkFontSlant.Italic,
+    // SkParagraph does not support oblique fonts on macOS on m107
+    {$IFDEF MACOS}TSkFontSlant.Italic{$ELSE}TSkFontSlant.Oblique{$ENDIF});
   SkFontWeightValue: array[TFontWeight] of Integer = (100, 200, 300, 350, 400, 500, 600, 700, 800, 900, 950);
   SkFontWidthValue: array[TFontStretch] of Integer = (1, 2, 3, 4, 5, 6, 7, 8, 9);
 
@@ -1434,6 +1439,13 @@ end;
 function BitmapToSkImage(const ABitmap: TBitmap): ISkImage;
 begin
   Result := ABitmap.ToSkImage;
+end;
+
+function CeilFloat(const X: Single): Single;
+begin
+  Result := Int(X);
+  if Frac(X) > 0 then
+    Result := Result + 1;
 end;
 
 procedure DrawDesignBorder(const ACanvas: ISkCanvas; ADest: TRectF; const AOpacity: Single);
@@ -3736,7 +3748,11 @@ end;
 
 function TSkDefaultAnimationCodec.GetFPS: Double;
 begin
+{$IF CompilerVersion >= 37}
+  Result := GlobalPreferredFramesPerSecond;
+{$ELSE}
   Result := TAnimation.DefaultAniFrameRate;
+{$ENDIF}
 end;
 
 function TSkDefaultAnimationCodec.GetIsStatic: Boolean;
@@ -5508,7 +5524,7 @@ begin
       ParagraphLayout(AWidth);
     end
     else
-      ParagraphLayout(High(Integer));
+      ParagraphLayout(Infinity);
   end;
   try
     AWidth := GetFitWidth;
@@ -5666,8 +5682,8 @@ var
       Result.TextDirection := TSkTextDirection.RightToLeft;
     if ResultingTextSettings.Trimming in [TTextTrimming.Character, TTextTrimming.Word] then
       Result.Ellipsis := '...';
-    if ResultingTextSettings.MaxLines = 0 then
-      Result.MaxLines := High(Integer)
+    if (ResultingTextSettings.MaxLines <= 0) or (ResultingTextSettings.MaxLines = High(NativeUInt)) then
+      Result.MaxLines := High(NativeUInt) - 1
     else
       Result.MaxLines := ResultingTextSettings.MaxLines;
     Result.TextAlign := SkTextAlign[ResultingTextSettings.HorzAlign];
@@ -5903,23 +5919,26 @@ end;
 
 procedure TSkLabel.ParagraphLayout(AMaxWidth: Single);
 
-  function DoParagraphLayout(const AParagraph: ISkParagraph; AMaxWidth: Single): Single;
+  function DoParagraphLayout(const AParagraph: ISkParagraph; const AMaxWidth: Single): Single;
   begin
-    if SameValue(AMaxWidth, 0, TEpsilon.Position) then
-      Result := AMaxWidth
+    if CompareValue(AMaxWidth, 0, TEpsilon.Position) = GreaterThanValue then
+    begin
+      if IsInfinite(AMaxWidth) then
+        Result := AMaxWidth
+      else
+        // The SkParagraph.Layout calls a floor for the MaxWidth, so we should ceil it to force the original AMaxWidth
+        Result := CeilFloat(AMaxWidth + TEpsilon.Matrix);
+    end
     else
-      // The SkParagraph.Layout calls a floor for the MaxWidth, so we should ceil it to force the original AMaxWidth
-      Result := Ceil(AMaxWidth + TEpsilon.Matrix);
+      Result := 0;
     AParagraph.Layout(Result);
   end;
 
-const
-  MaxLayoutWidth = High(Integer) - High(Word);
 var
   LMaxWidthUsed: Single;
   LParagraph: ISkParagraph;
 begin
-  AMaxWidth := EnsureRange(AMaxWidth, 0, MaxLayoutWidth);
+  AMaxWidth := Max(AMaxWidth, 0);
   if not SameValue(FParagraphLayoutWidth, AMaxWidth, TEpsilon.Position) then
   begin
     LParagraph := Paragraph;
@@ -6236,16 +6255,18 @@ end;
   {$HPPEMIT '#elif defined(__WIN32__)'}
   {$HPPEMIT '  #pragma link "Skia.Package.FMX.lib"'}
   {$HPPEMIT '#elif defined(_WIN64)'}
-  {$HPPEMIT '  #pragma link "Skia.Package.FMX.a"'}
+  {$HPPEMIT '  #if (__clang_major__ >= 15)'}
+  {$HPPEMIT '    #pragma link "Skia.Package.FMX.lib"'}
+  {$HPPEMIT '  #else'}
+  {$HPPEMIT '    #pragma link "Skia.Package.FMX.a"'}
+  {$HPPEMIT '  #endif'}
   {$HPPEMIT '#endif'}
 {$ENDIF}
 
 {$IF DEFINED(IOS) or DEFINED(ANDROID)}
   {$HPPEMIT LINKUNIT}
-{$ELSEIF DEFINED(WIN32)}
-  {$HPPEMIT '#pragma link "FMX.Skia.obj"'}
-{$ELSEIF DEFINED(WIN64)}
-  {$HPPEMIT '#pragma link "FMX.Skia.o"'}
+{$ELSEIF DEFINED(MSWINDOWS)}
+  {$HPPEMIT '#pragma link "FMX.Skia"'}
 {$ENDIF}
 
 {$HPPEMIT NOUSINGNAMESPACE}
@@ -6300,6 +6321,10 @@ end;
 {$HPPEMIT END '    static bool& GlobalDisableSkiaCodecsReplacement = ::Fmx::Skia::GlobalDisableSkiaCodecsReplacement;'}
 {$HPPEMIT END '    static bool& GlobalUseSkia = ::Fmx::Skia::GlobalUseSkia;'}
 {$HPPEMIT END '    static bool& GlobalUseSkiaRasterWhenAvailable = ::Fmx::Skia::GlobalUseSkiaRasterWhenAvailable;'}
+{$IF CompilerVersion >= 36}
+{$HPPEMIT END '    static bool& GlobalUseSkiaFilters = ::Fmx::Skia::GlobalUseSkiaFilters;'}
+{$HPPEMIT END '    static bool& GlobalSkiaBitmapsInParallel = ::Fmx::Skia::GlobalSkiaBitmapsInParallel;'}
+{$ENDIF}
 {$HPPEMIT END '    static ::System::StaticArray<System::Skia::TSkColorType, 24>& SkFmxColorType = ::Fmx::Skia::SkFmxColorType;'}
 {$HPPEMIT END '    static ::System::StaticArray<Fmx::Types::TPixelFormat, 23>& SkFmxPixelFormat = ::Fmx::Skia::SkFmxPixelFormat;'}
 {$HPPEMIT END '    static const TAddSkPathToPathDataProc AddSkPathToPathData = ::Fmx::Skia::AddSkPathToPathData;'}

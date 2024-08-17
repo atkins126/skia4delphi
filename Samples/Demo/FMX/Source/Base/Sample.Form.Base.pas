@@ -2,7 +2,7 @@
 {                                                                        }
 {                              Skia4Delphi                               }
 {                                                                        }
-{ Copyright (c) 2021-2023 Skia4Delphi Project.                           }
+{ Copyright (c) 2021-2024 Skia4Delphi Project.                           }
 {                                                                        }
 { Use of this source code is governed by the MIT license that can be     }
 { found in the LICENSE file.                                             }
@@ -13,7 +13,7 @@ unit Sample.Form.Base;
 interface
 
 {$SCOPEDENUMS ON}
-{$IF (CompilerVersion >= 33) and (CompilerVersion <= 35)} // RAD Studio 10.3 Rio to 11 Alexandria
+{$IF (CompilerVersion >= 33) and (CompilerVersion <= 36)} // RAD Studio 10.3 Rio to 12 Athens
   {$DEFINE AdvancedSystemBars}
 {$ENDIF}
 

@@ -2,7 +2,7 @@
 {                                                                        }
 {                              Skia4Delphi                               }
 {                                                                        }
-{ Copyright (c) 2021-2023 Skia4Delphi Project.                           }
+{ Copyright (c) 2021-2024 Skia4Delphi Project.                           }
 {                                                                        }
 { Use of this source code is governed by the MIT license that can be     }
 { found in the LICENSE file.                                             }
@@ -57,7 +57,7 @@ uses
   System.Skia.API;
 
 const
-  SkVersion = '6.0.0-beta5';
+  SkVersion = '6.2.0';
 
 {$REGION 'FPC Compatibility'}
 {$IFDEF FPC}

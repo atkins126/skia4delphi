@@ -93,7 +93,7 @@ You can install **Skia4Delphi** in 3 ways:
 
   Download the setup of [latest release](../../releases/latest) and install it.
 
-  ![Skia4Delphi Installation](Assets/Documents/installation.png)
+  <p><img src="Assets/Documents/installation.png" width="511" alt="Skia4Delphi Installation" /></p>
 
 - Embarcadero's GetIt _(RAD Studio > Tools > GetIt Package Manager...)_
 
@@ -328,7 +328,7 @@ begin
 
 1. `FMX.Skia` unit must be included right after the `FMX.Forms`;
 2. The **Skia Metal** render can be used by including the `FMX.Types` unit right **after** the `FMX.Forms` unit, and setting `GlobalUseMetal` to **True** together with `GlobalUseSkia` to improve the speed in iOS and macOS;
-3. `GlobalUseSkia` has no effect on Linux. (although not supported, all [controls](#controls-vclfmx) work perfectly, just like the rest of the library)
+3. The **Skia Vulkan** render can be used on RAD Studio 12 Athens or newer by including the `FMX.Types` unit right **after** the `FMX.Forms` unit, and setting `GlobalUseVulkan` to **True** together with `GlobalUseSkia` to improve the speed on Android and Windows. On Windows, Vulkan will only be used if you also add `GlobalUseSkiaRasterWhenAvailable := False;`;
 4. This declaration of `GlobalUseSkia := True;`, as well as other variables of FMX itself, such as `GlobalUseMetal`, can also be made in the initialization of some unit instead of .dpr. Sometimes this is really necessary because if in the initialization or in the class constructor of some unit, bitmaps are used, the GlobalUseXXX declarations of the .dpr will have no effect. In this case, just create a unit in the project like "Project.Startup.pas", place the GlobalUseXXX declarations in the initialization of this new unit, and declare this new unit before any other unit of yours in the .dpr, that is, right after FMX.Forms.
 
 ### Benchmark
@@ -476,6 +476,32 @@ begin
 end.
 ```
 
+On RAD Studio 12 Athens or newer it is recommended to use `IFMXFontManagerService`:
+
+```pascal
+program Project1;
+
+uses
+  System.StartUpCopy,
+  FMX.Forms,
+  FMX.Platform,
+  FMX.FontManager,
+  FMX.Skia,
+  Unit1 in 'Unit1.pas' {Form1};
+
+{$R *.res}
+
+begin
+  GlobalUseSkia := True;
+  var LFontManager: IFMXFontManagerService;
+  if TPlatformServices.Current.SupportsPlatformService(IFMXFontManagerService, LFontManager) then
+    LFontManager.AddCustomFontFromFile('Poppins.ttf');
+  Application.Initialize;
+  Application.CreateForm(TForm1, Form1);
+  Application.Run;
+end.
+```
+
 # Controls VCL/FMX
 
 ## TSkAnimatedImage
@@ -564,40 +590,13 @@ The example above results in the output below:
 
 # Compatibility
 
-| RAD Studio                   | Platforms        |
-| ---------------------------- | ---------------- |
-| RAD Studio 11 Alexandria     | All Platforms    |
-| RAD Studio 10.3 Rio or newer | Windows, Android |
-| RAD Studio XE7 or newer      | Windows          |
+| RAD Studio                        | Platforms        |
+| --------------------------------- | ---------------- |
+| RAD Studio 11 Alexandria or newer | All Platforms    |
+| RAD Studio 10.3 Rio or newer      | Windows, Android |
+| RAD Studio XE7 or newer           | Windows          |
 
 For the platforms supported by **Skia4Delphi** (listed above), the OS versions supported by the library are the same [OS versions that RAD Studio supports.](https://docwiki.embarcadero.com/PlatformStatus/en/Main_Page)
-
-# Known issues
-
-Due to certain constraints within the IDE, there are specific limitations and workarounds.
-*This topic will be updated as soon as these limitations no longer exist*
-
-## Universal macOS Binary
-
-When the project settings are configured to generate a universal binary for macOS (also known as fat library), the internal process executed by MSBuild only applies the "lipo" tool to the application, without an option to merge files present in the deployment configurations. As a result, the binary for macOS ARM64 targets (known in the IDE as "OSXARM64") is universal, containing both x64 and ARM64 versions, even when the option to generate a universal project binary is disabled.
-
-## Submit your app to the Mac App Store
-
-To submit a macOS application to the Apple Mac Store, it is necessary to sign all shared library files, and the deployment settings do not provide a method to sign files within them. In this case, follow the steps below for manual signing:
-
-1. Transfer the **Skia4Delphi** shared library file to your macOS `Desktop` (if the target is OSXARM64, use `Binary\Shared\OSXARM64\libsk4d.dylib`. If it is OSX64, use `Binary\Shared\OSX64\libsk4d.dylib`);
-
-2. Access your macOS `Desktop` via Terminal and run the following command:
-   ```bash
-   security find-identity -v -p codesigning
-   ```
-
-3. The output will present information formatted roughly like **XXXXX "Apple Development: YYYYY (ZZZZZ)"**. Use this information to execute the command below and sign the library:
-   ```bash
-   codesign --force --timestamp --sign "Apple Development: YYYYY (ZZZZZ)" libsk4d.dylib
-   ```
-
-4. Replace the original **Skia4Delphi** file with the signed file, then perform the "Clean" and "Build" operation on your project.
 
 # Documentation
 
@@ -605,7 +604,7 @@ The APIs are very similar to Skia's, few methods and functions have been renamed
 
 # Version
 
-**[Skia4Delphi 6.0.0-beta5](/../../releases/latest)**
+**[Skia4Delphi 6.2.0](/../../releases/latest)**
 
 Skia Version used: [chrome/m107](https://github.com/google/skia/tree/chrome/m107)
 
