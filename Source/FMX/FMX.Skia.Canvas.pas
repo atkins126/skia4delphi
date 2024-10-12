@@ -505,7 +505,9 @@ uses
   System.UIConsts,
 
   { Workarounds }
-  {$IF DEFINED(MACOS)}
+  {$IF DEFINED(MSWINDOWS)}
+  FMX.Helpers.Win,
+  {$ELSEIF DEFINED(MACOS)}
   FMX.Context.Metal,
   FMX.Types3D,
   FMX.Utils,
@@ -1488,6 +1490,74 @@ end;
 // - ---------------------------------------------------------------------------
 {$ENDREGION}
 
+{$REGION ' - Workaround RS-97615'}
+// - ---------------------------------------------------------------------------
+// - WORKAROUND
+// - ---------------------------------------------------------------------------
+// -
+// - Description:
+// -   This code is a workaround intended to fix a bug involving HiDPI and non
+// -   TCanvasD2D render.
+// -
+// - Bug report:
+// -   https://embt.atlassian.net/browse/RS-97615
+// -
+// - ---------------------------------------------------------------------------
+{$IF (CompilerVersion >= 31) and (CompilerVersion <= 34)}
+{$IFDEF MSWINDOWS}
+
+type
+  { TRS97615Workaround }
+
+  TRS97615Workaround = record
+  private
+    class var FScale: Single;
+  private type
+    TOpenWinWindowHandle = class(TWinWindowHandle);
+  public
+    class procedure Apply; static;
+  end;
+
+{ TRS97615Workaround }
+
+class procedure TRS97615Workaround.Apply;
+
+  function HookCode(const ACodeAddress, AHookAddress: Pointer): Boolean;
+  const
+    JMP_RELATIVE = $E9;
+    SIZE_OF_JUMP = 5;
+  var
+    LDisplacement: Integer;
+    LOldProtect: DWORD;
+    P: PByte;
+  begin
+    Result := VirtualProtect(ACodeAddress, SIZE_OF_JUMP, PAGE_EXECUTE_READWRITE, LOldProtect);
+    if Result then
+    begin
+      P := ACodeAddress;
+      P^ := JMP_RELATIVE;
+      Inc(P);
+      LDisplacement := UIntPtr(AHookAddress) - (UIntPtr(ACodeAddress) + SIZE_OF_JUMP);
+      PInteger(P)^ := LDisplacement;
+      VirtualProtect(ACodeAddress, SIZE_OF_JUMP, LOldProtect, LOldProtect);
+    end;
+  end;
+
+  function HookedGetScale(const Self: TClass): Single;
+  begin
+    Result := TRS97615Workaround.FScale;
+  end;
+
+begin
+  FScale := GetWndScale(ApplicationHWND);
+  HookCode(@TOpenWinWindowHandle.GetScale, @HookedGetScale);
+end;
+
+{$ENDIF}
+{$ENDIF}
+// - ---------------------------------------------------------------------------
+{$ENDREGION}
+
 type
   { TSkBitmapCodec }
 
@@ -1774,9 +1844,9 @@ end;
 
 constructor TSkCanvasCustom.CreateFromPrinter(const APrinter: TAbstractPrinter);
 begin
-  inherited;
   if not Supports(APrinter, ISkCanvasWrapper, FWrapper) then
     raise EPrinter.CreateResFmt(@SInvalidPrinterClass, [APrinter.ClassName]);
+  inherited;
   FWidth  := FWrapper.CanvasWidth;
   FHeight := FWrapper.CanvasHeight;
 end;
@@ -2170,8 +2240,8 @@ end;
 
 constructor TSkCanvasCustom.Wrap(const AWrapper: ISkCanvasWrapper);
 begin
-  inherited Create;
   FWrapper := AWrapper;
+  inherited Create;
   FWidth   := FWrapper.CanvasWidth;
   FHeight  := FWrapper.CanvasHeight;
   Initialize;
@@ -2248,10 +2318,13 @@ end;
 
 constructor TSkCanvasBase.CreateFromWindow(const AParent: TWindowHandle;
   const AWidth, AHeight: Integer; const AQuality: TCanvasQuality);
+var
+  LParentHandle: TWinWindowHandle;
 begin
   inherited;
-  if WindowHandleToPlatform(Parent){$IF CompilerVersion < 30}.Form{$ENDIF}.Transparency then
-    WindowHandleToPlatform(Parent).CreateBuffer({$IF CompilerVersion < 31}Width, Height{$ELSE}WindowHandleToPlatform(Parent).WndClientSize.Width, WindowHandleToPlatform(Parent).WndClientSize.Height{$ENDIF});
+  LParentHandle := WindowHandleToPlatform(Parent);
+  if LParentHandle{$IF CompilerVersion < 30}.Form{$ENDIF}.Transparency then
+    LParentHandle.CreateBuffer({$IF CompilerVersion < 31}Width, Height{$ELSE}LParentHandle.WndClientSize.Width, LParentHandle.WndClientSize.Height{$ENDIF});
 end;
 
 {$ENDIF}
@@ -2305,13 +2378,18 @@ begin
 end;
 
 procedure TSkCanvasBase.EndCanvas(const AContextHandle: THandle);
+{$IFDEF MSWINDOWS}
+var
+  LParentHandle: TWinWindowHandle;
+{$ENDIF}
 begin
   if Parent <> nil then
   begin
     FSurface.FlushAndSubmit;
     {$IFDEF MSWINDOWS}
-    if WindowHandleToPlatform(Parent){$IF CompilerVersion < 30}.Form{$ENDIF}.Transparency then
-      FSurface.ReadPixels(TSkImageInfo.Create({$IF CompilerVersion < 31}Width, Height{$ELSE}WindowHandleToPlatform(Parent).WndClientSize.Width, WindowHandleToPlatform(Parent).WndClientSize.Height{$ENDIF}, TSkColorType.BGRA8888), WindowHandleToPlatform(Parent).BufferBits, {$IF CompilerVersion < 31}Width{$ELSE}WindowHandleToPlatform(Parent).WndClientSize.Width{$ENDIF} * SkBytesPerPixel[TSkColorType.BGRA8888]);
+    LParentHandle := WindowHandleToPlatform(Parent);
+    if LParentHandle{$IF CompilerVersion < 30}.Form{$ENDIF}.Transparency then
+      FSurface.ReadPixels(TSkImageInfo.Create({$IF CompilerVersion < 31}Width, Height{$ELSE}LParentHandle.WndClientSize.Width, LParentHandle.WndClientSize.Height{$ENDIF}, TSkColorType.BGRA8888), LParentHandle.BufferBits, {$IF CompilerVersion < 31}Width{$ELSE}LParentHandle.WndClientSize.Width{$ENDIF} * SkBytesPerPixel[TSkColorType.BGRA8888]);
     {$ENDIF}
     FSurface := nil;
     SwapBuffers(AContextHandle);
@@ -2324,10 +2402,16 @@ end;
 {$IFDEF MSWINDOWS}
 
 procedure TSkCanvasBase.Resized;
+var
+  LParentHandle: TWinWindowHandle;
 begin
   inherited;
-  if (Parent <> nil) and (WindowHandleToPlatform(Parent){$IF CompilerVersion < 30}.Form{$ENDIF}.Transparency) then
-    WindowHandleToPlatform(Parent).ResizeBuffer({$IF CompilerVersion < 31}Width, Height{$ELSE}WindowHandleToPlatform(Parent).WndClientSize.Width, WindowHandleToPlatform(Parent).WndClientSize.Height{$ENDIF});
+  if Parent <> nil then
+  begin
+    LParentHandle := WindowHandleToPlatform(Parent);
+    if LParentHandle{$IF CompilerVersion < 30}.Form{$ENDIF}.Transparency then
+      LParentHandle.ResizeBuffer({$IF CompilerVersion < 31}Width, Height{$ELSE}LParentHandle.WndClientSize.Width, LParentHandle.WndClientSize.Height{$ENDIF});
+  end;
 end;
 
 {$ENDIF}
@@ -3146,6 +3230,8 @@ const
       if TFontStyle.fsStrikeOut in AFont.Style then
         ATextStyle.Decorations := ATextStyle.Decorations + [TSkTextDecoration.LineThrough];
     end;
+    if GlobalSkiaTextLocale <> '' then
+      ATextStyle.Locale := GlobalSkiaTextLocale;
   end;
 
   function CreateTextStyle(const AAttribute: TTextAttribute): ISkTextStyle;
@@ -4019,6 +4105,9 @@ begin
         {$ENDIF}
         {$IF DECLARED(TRSP37829Workaround)}
         TRSP37829Workaround.Apply;
+        {$ENDIF}
+        {$IF DECLARED(TRS97615Workaround)}
+        TRS97615Workaround.Apply;
         {$ENDIF}
       end;
     end;
