@@ -536,6 +536,8 @@ uses
   FMX.Types3D,
   FMX.Utils,
   Androidapi.Gles2,
+  Androidapi.JNI.JavaTypes,
+  Androidapi.Helpers,
   Posix.SysMman,
   Posix.Unistd,
   System.Rtti,
@@ -1581,6 +1583,13 @@ type
     class function IsValid(const AStream: TStream): Boolean; override;
   end;
 
+  { TSkCanvasCustomHelper }
+
+  TSkCanvasCustomHelper = class helper for TSkCanvasCustom
+  public
+    function GetSamplingOptions(const ASrcRect, ADestRect: TRectF; AHighSpeed: Boolean): TSkSamplingOptions; overload; inline;
+  end;
+
 {$IFDEF SKIA_RASTER}
 
   { TSkRasterCanvas }
@@ -1634,11 +1643,28 @@ begin
   {$ENDIF}
 end;
 
+{ TSkCanvasCustomHelper }
+
+function TSkCanvasCustomHelper.GetSamplingOptions(const ASrcRect, ADestRect: TRectF;
+  AHighSpeed: Boolean): TSkSamplingOptions;
+begin
+  // Avoid high quality filter when there is no stretch or complex transformations to optimize performance
+  if (not AHighSpeed) and (Quality <> TCanvasQuality.HighPerformance) and
+    (MatrixMeaning in [TMatrixMeaning.Identity, TMatrixMeaning.Translate]) then
+  begin
+    AHighSpeed := SameValue(ASrcRect.Width, ADestRect.Width * Scale, TEpsilon.Position) and
+      SameValue(ASrcRect.Height, ADestRect.Height * Scale, TEpsilon.Position);
+  end;
+  Result := GetSamplingOptions(AHighSpeed);
+end;
+
 { TSkCanvasCustom }
 
 procedure TSkCanvasCustom.AfterConstruction;
 begin
-  FAntiAlias := Quality <> TCanvasQuality.HighPerformance;
+  // Skia m107 shows better performance with anti-aliasing enabled. Therefore,
+  // we'll enforce it to always be true, regardless of the Quality property.
+  FAntiAlias := True;
   SkInitialize;
   inherited;
 end;
@@ -1731,9 +1757,9 @@ begin
               ABrushData.BitmapMapped := False;
               ABrushData.Paint.AlphaF := AOpacity;
               if ABrushData.Brush.Bitmap.WrapMode = TWrapMode.TileStretch then
-                ABrushData.Paint.Shader := LCache.MakeShader(TMatrix.CreateScaling(ARect.Width / LCache.Width, ARect.Height / LCache.Height) * TMatrix.CreateTranslation(ARect.Left, ARect.Top), GetSamplingOptions)
+                ABrushData.Paint.Shader := LCache.MakeShader(TMatrix.CreateScaling(ARect.Width / LCache.Width, ARect.Height / LCache.Height) * TMatrix.CreateTranslation(ARect.Left, ARect.Top), GetSamplingOptions(RectF(0, 0, LCache.Width, LCache.Height), ARect, True))
               else
-                ABrushData.Paint.Shader := LCache.MakeShader(GetSamplingOptions, WrapMode[ABrushData.Brush.Bitmap.WrapMode], WrapMode[ABrushData.Brush.Bitmap.WrapMode]);
+                ABrushData.Paint.Shader := LCache.MakeShader(GetSamplingOptions(True), WrapMode[ABrushData.Brush.Bitmap.WrapMode], WrapMode[ABrushData.Brush.Bitmap.WrapMode]);
             end;
           end;
           if LCache = nil then
@@ -1746,9 +1772,9 @@ begin
               if LImage <> nil then
               begin
                 if ABrushData.Brush.Bitmap.WrapMode = TWrapMode.TileStretch then
-                  ABrushData.Paint.Shader := LImage.MakeShader(TMatrix.CreateScaling(ARect.Width / LImage.Width, ARect.Height / LImage.Height) * TMatrix.CreateTranslation(ARect.Left, ARect.Top), GetSamplingOptions)
+                  ABrushData.Paint.Shader := LImage.MakeShader(TMatrix.CreateScaling(ARect.Width / LImage.Width, ARect.Height / LImage.Height) * TMatrix.CreateTranslation(ARect.Left, ARect.Top), GetSamplingOptions(RectF(0, 0, LImage.Width, LImage.Height), ARect, True))
                 else
-                  ABrushData.Paint.Shader := LImage.MakeShader(GetSamplingOptions, WrapMode[ABrushData.Brush.Bitmap.WrapMode], WrapMode[ABrushData.Brush.Bitmap.WrapMode]);
+                  ABrushData.Paint.Shader := LImage.MakeShader(GetSamplingOptions(True), WrapMode[ABrushData.Brush.Bitmap.WrapMode], WrapMode[ABrushData.Brush.Bitmap.WrapMode]);
               end;
             end;
           end;
@@ -1923,7 +1949,7 @@ begin
     begin
       LCache := GetCachedImage(ABitmap);
       if LCache <> nil then
-        Canvas.DrawImageRect(LCache, LSrcRect, ADestRect, GetSamplingOptions(AHighSpeed), LPaint);
+        Canvas.DrawImageRect(LCache, LSrcRect, ADestRect, GetSamplingOptions(LSrcRect, ADestRect, AHighSpeed), LPaint);
     end;
     if LCache = nil then
     begin
@@ -1932,7 +1958,7 @@ begin
         try
           LImage := TSkImage.MakeFromRaster(TSkImageInfo.Create(LBitmapData.Width, LBitmapData.Height, SkFmxColorType[LBitmapData.PixelFormat]), LBitmapData.Data, LBitmapData.Pitch);
           if LImage <> nil then
-            Canvas.DrawImageRect(LImage, LSrcRect, ADestRect, GetSamplingOptions(AHighSpeed), LPaint);
+            Canvas.DrawImageRect(LImage, LSrcRect, ADestRect, GetSamplingOptions(LSrcRect, ADestRect, AHighSpeed), LPaint);
         finally
           ABitmap.Unmap(LBitmapData);
         end;
@@ -1946,18 +1972,13 @@ procedure TSkCanvasCustom.DoDrawEllipse(const ARect: TRectF;
 var
   LBrushData: TBrushData;
   LPaint: TSkPaint;
-  LPathBuilder: ISkPathBuilder;
 begin
   LPaint := BeginPaintWithStrokeBrush(ABrush, ARect, AOpacity, LBrushData);
   if LPaint <> nil then
-  begin
-    try
-      LPathBuilder := TSkPathBuilder.Create;
-      LPathBuilder.AddOval(ARect, TSkPathDirection.CW, 3);
-      Canvas.DrawPath(LPathBuilder.Detach, LPaint);
-    finally
-      EndPaint(LBrushData);
-    end;
+  try
+    Canvas.DrawOval(ARect, LPaint);
+  finally
+    EndPaint(LBrushData);
   end;
 end;
 
@@ -2023,18 +2044,13 @@ procedure TSkCanvasCustom.DoFillEllipse(const ARect: TRectF;
 var
   LBrushData: TBrushData;
   LPaint: TSkPaint;
-  LPathBuilder: ISkPathBuilder;
 begin
   LPaint := BeginPaintWithBrush(ABrush, ARect, AOpacity, LBrushData);
   if LPaint <> nil then
-  begin
-    try
-      LPathBuilder := TSkPathBuilder.Create;
-      LPathBuilder.AddOval(ARect, TSkPathDirection.CW, 3);
-      Canvas.DrawPath(LPathBuilder.Detach, LPaint);
-    finally
-      EndPaint(LBrushData);
-    end;
+  try
+    Canvas.DrawOval(ARect, LPaint);
+  finally
+    EndPaint(LBrushData);
   end;
 end;
 
@@ -2192,10 +2208,10 @@ begin
   else
   begin
     case AQuality of
-      TCanvasQuality.SystemDefault,
+      TCanvasQuality.SystemDefault: TSkSamplingOptions.Medium;
       TCanvasQuality.HighQuality: Result := TSkSamplingOptions.High;
     else
-      Result := TSkSamplingOptions.Create(TSkFilterMode.Nearest, TSkMipmapMode.Nearest);
+      Result := TSkSamplingOptions.Low;
     end;
   end;
 end;
@@ -3060,6 +3076,18 @@ begin
 end;
 
 class procedure TSkTextLayout.Initialize;
+
+  function GetDefaultTextLocale: string;
+  var
+    LLocaleService: IFMXLocaleService;
+  begin
+    if TPlatformServices.Current.SupportsPlatformService(IFMXLocaleService, LLocaleService) then
+      Result := LLocaleService.GetCurrentLangID;
+    {$IF defined(ANDROID) and ((CompilerVersion < 36) or (CompilerVersion = 36) and not declared(RTLVersion123))}
+    Result := JStringToString(TJLocale.JavaClass.getDefault.getLanguage());
+    {$ENDIF}
+  end;
+
 {$IFDEF ANDROID}
 const
   FontFilesFilter = '*.ttf'; // Do not localize
@@ -3067,6 +3095,7 @@ var
   LFileName: string;
 {$ENDIF}
 begin
+  GlobalSkiaTextLocale := GetDefaultTextLocale;
   {$IFDEF ANDROID}
   for LFileName in TDirectory.GetFiles(TPath.GetDocumentsPath, FontFilesFilter) do
     TSkDefaultProviders.RegisterTypeface(LFileName);
@@ -3772,9 +3801,6 @@ end;
 procedure TSkRasterCanvas.AfterConstruction;
 begin
   inherited;
-  // For some reason that is still unclear, the CPU (raster) backend on the m107 performs worse when we disable
-  // AntiAlias. So let's leave it always enabled for now.
-  FAntiAlias := True;
 end;
 
 destructor TSkRasterCanvas.Destroy;

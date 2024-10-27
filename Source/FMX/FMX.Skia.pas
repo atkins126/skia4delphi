@@ -1307,10 +1307,6 @@ implementation
 
 uses
   { Delphi }
-  {$IFDEF ANDROID}
-  Androidapi.JNI.JavaTypes,
-  Androidapi.Helpers,
-  {$ENDIF}
   System.Math.Vectors,
   System.ZLib,
   System.IOUtils,
@@ -1461,8 +1457,8 @@ var
   LPaint: ISkPaint;
 begin
   LPaint := TSkPaint.Create(TSkPaintStyle.Stroke);
-  LPaint.AlphaF := AOpacity;
   LPaint.Color := DesignBorderColor;
+  LPaint.AlphaF := AOpacity;
   LPaint.StrokeWidth := 1;
   LPaint.PathEffect := TSkPathEffect.MakeDash([3, 1], 0);
 
@@ -6355,7 +6351,4 @@ initialization
     TSkLabel.TCustomWordsItem, TSkLabel.TWordsCollection]);
   TSkAnimatedImage.RegisterCodec(TSkLottieAnimationCodec);
   TSkAnimatedImage.RegisterCodec(TSkDefaultAnimationCodec);
-{$IFDEF ANDROID}
-  GlobalSkiaTextLocale := JStringToString(TJLocale.JavaClass.getDefault.getLanguage());
-{$ENDIF}
 end.
