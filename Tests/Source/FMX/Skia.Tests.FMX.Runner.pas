@@ -2,7 +2,7 @@
 {                                                                        }
 {                              Skia4Delphi                               }
 {                                                                        }
-{ Copyright (c) 2021-2024 Skia4Delphi Project.                           }
+{ Copyright (c) 2021-2025 Skia4Delphi Project.                           }
 {                                                                        }
 { Use of this source code is governed by the MIT license that can be     }
 { found in the LICENSE file.                                             }
@@ -165,7 +165,7 @@ type
     procedure SetResultType(AResultType: TTestResultType);
     procedure Reload;
     property FullName: string read FFullName;
-    property ResultType: TTestResultTYpe read FResultType write FResultType;
+    property ResultType: TTestResultType read FResultType write FResultType;
     property Test: ITest read FTest;
   end;
 
@@ -579,7 +579,7 @@ var
     try
       ACanvas.Translate(AImageRect.Left, AImageRect.Top);
       ACanvas.Scale(AImageRect.Width / AImage.Width, AImageRect.Height / AImage.Height);
-      ACanvas.DrawImage(AImage, 0, 0, TSkSamplingOptions.Low);
+      ACanvas.DrawImage(AImage, 0, 0, TSkSamplingOptions.High);
     finally
       ACanvas.Restore;
     end;
@@ -719,6 +719,7 @@ begin
   FPanel.HitTest := False;
   FPanel.Width := 48;
   FPanel.Align := TAlignLayout.Right;
+  FPanel.Margins.Right := 1;
   FPanel.Visible := False;
   FPanel.Parent := Self;
 end;

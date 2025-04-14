@@ -2,7 +2,7 @@
 {                                                                        }
 {                              Skia4Delphi                               }
 {                                                                        }
-{ Copyright (c) 2021-2024 Skia4Delphi Project.                           }
+{ Copyright (c) 2021-2025 Skia4Delphi Project.                           }
 {                                                                        }
 { Use of this source code is governed by the MIT license that can be     }
 { found in the LICENSE file.                                             }
@@ -154,7 +154,7 @@ type
     constructor Create(AOwner: TTreeNodes); override;
     procedure Reload;
     property FullName: string read FFullName write FFullName;
-    property ResultType: TTestResultTYpe read FResultType write SetResultType;
+    property ResultType: TTestResultType read FResultType write SetResultType;
     property Test: ITest read FTest write FTest;
   end;
 
@@ -531,7 +531,7 @@ var
     try
       ACanvas.Translate(AImageRect.Left, AImageRect.Top);
       ACanvas.Scale(AImageRect.Width / AImage.Width, AImageRect.Height / AImage.Height);
-      ACanvas.DrawImage(AImage, 0, 0, TSkSamplingOptions.Low);
+      ACanvas.DrawImage(AImage, 0, 0, TSkSamplingOptions.High);
     finally
       ACanvas.Restore;
     end;

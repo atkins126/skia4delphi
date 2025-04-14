@@ -2,7 +2,7 @@
 {                                                                        }
 {                              Skia4Delphi                               }
 {                                                                        }
-{ Copyright (c) 2021-2024 Skia4Delphi Project.                           }
+{ Copyright (c) 2021-2025 Skia4Delphi Project.                           }
 {                                                                        }
 { Use of this source code is governed by the MIT license that can be     }
 { found in the LICENSE file.                                             }
@@ -1274,6 +1274,7 @@ type
     FImage: ISkImage;
     function GetBuffer(const ASize: TSize; const AOpacity: Byte): TBitmap;
   strict protected
+    procedure AssignTo(ADest: TPersistent); override;
     procedure Changed(ASender: TObject); override;
     procedure Draw(ACanvas: TCanvas; const ARect: TRect); override;
     procedure DrawTransparent(ACanvas: TCanvas; const ARect: TRect; AOpacity: Byte); override;
@@ -1293,6 +1294,7 @@ type
     {$ENDIF}
     procedure LoadFromClipboardFormat(AFormat: Word; AData: THandle; APalette: HPALETTE); override;
     procedure LoadFromStream(AStream: TStream); override;
+    function QueryInterface(const IID: TGUID; out Obj): HResult; override; stdcall;
     procedure SaveToClipboardFormat(var AFormat: Word; var AData: THandle; var APalette: HPALETTE); override;
     procedure SaveToFile(const AFileName: string); override;
     procedure SaveToStream(AStream: TStream); override;
@@ -6326,6 +6328,22 @@ begin
 end;
 {$ENDIF}
 
+procedure TSkGraphic.AssignTo(ADest: TPersistent);
+begin
+  if ADest is TBitmap then
+  begin
+    TBitmap(ADest).SetSize(Width, Height);
+    if FImage <> nil then
+      TBitmap(ADest).SkiaDraw(
+        procedure(const ACanvas: ISkCanvas)
+        begin
+          ACanvas.DrawImage(FImage, 0, 0);
+        end);
+  end
+  else
+    inherited;
+end;
+
 procedure TSkGraphic.Changed(ASender: TObject);
 begin
   FreeAndNil(FBuffer);
@@ -6478,6 +6496,13 @@ begin
   Changed(Self);
 end;
 
+function TSkGraphic.QueryInterface(const IID: TGUID; out Obj): HResult;
+begin
+  Result := inherited QueryInterface(IID, Obj);
+  if (FImage <> nil) and (Result <> S_OK) then
+    Result := FImage.QueryInterface(IID, Obj);
+end;
+
 procedure TSkGraphic.SaveToClipboardFormat(var AFormat: Word;
   var AData: THandle; var APalette: HPALETTE);
 begin
@@ -6487,7 +6512,7 @@ procedure TSkGraphic.SaveToFile(const AFileName: string);
 begin
   if FImage <> nil then
   begin
-    if ExtensionToEncodedImageFormat(AFileName) = FFormat then
+    if ExtensionToEncodedImageFormat(ExtractFileExt(AFileName)) = FFormat then
       FData.SaveToFile(AFileName)
     else
       FImage.EncodeToFile(AFileName);
@@ -6770,16 +6795,12 @@ end;
 {$HPPEMIT END '    using ::Vcl::Skia::TSkTextTrimming;'}
 {$HPPEMIT END '    using ::Vcl::Skia::TSkTextVertAlign;'}
 {$HPPEMIT END '    using ::Vcl::Skia::TSkTypefaceManager;'}
-{$HPPEMIT END '    typedef ::System::Skia::_di_ISkImage (__fastcall *TBitmapToSkImageFunc)(::Vcl::Graphics::TBitmap* const ABitmap);'}
-{$HPPEMIT END '    typedef void (__fastcall *TDrawDesignBorderProc)(const ::System::Skia::_di_ISkCanvas ACanvas, const ::System::Types::TRectF &ADest, const float AOpacity);'}
-{$HPPEMIT END '    typedef void (__fastcall *TSkiaDrawProc)(::Vcl::Graphics::TBitmap* const ABitmap, const ::Vcl::Skia::_di_TSkDrawProc AProc, const bool AStartClean);'}
-{$HPPEMIT END '    typedef ::Vcl::Graphics::TBitmap* (__fastcall *TSkImageToBitmapFunc)(const ::System::Skia::_di_ISkImage AImage);'}
-{$HPPEMIT END '    static TSkStyledSettings& AllStyledSettings = ::Vcl::Skia::AllStyledSettings;'}
-{$HPPEMIT END '    static TSkStyledSettings& DefaultStyledSettings = ::Vcl::Skia::DefaultStyledSettings;'}
-{$HPPEMIT END '    static const TBitmapToSkImageFunc BitmapToSkImage = ::Vcl::Skia::BitmapToSkImage;'}
-{$HPPEMIT END '    static const TDrawDesignBorderProc DrawDesignBorder = ::Vcl::Skia::DrawDesignBorder;'}
-{$HPPEMIT END '    static const TSkiaDrawProc SkiaDraw = ::Vcl::Skia::SkiaDraw;'}
-{$HPPEMIT END '    static const TSkImageToBitmapFunc SkImageToBitmap = ::Vcl::Skia::SkImageToBitmap;'}
+{$HPPEMIT END '    using ::Vcl::Skia::AllStyledSettings;'}
+{$HPPEMIT END '    using ::Vcl::Skia::DefaultStyledSettings;'}
+{$HPPEMIT END '    using ::Vcl::Skia::BitmapToSkImage;'}
+{$HPPEMIT END '    using ::Vcl::Skia::DrawDesignBorder;'}
+{$HPPEMIT END '    using ::Vcl::Skia::SkiaDraw;'}
+{$HPPEMIT END '    using ::Vcl::Skia::SkImageToBitmap;'}
 {$HPPEMIT END '#endif'}
 
 initialization

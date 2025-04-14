@@ -1,5 +1,5 @@
 ﻿<!--
- Copyright (c) 2021-2024 Skia4Delphi Project.
+ Copyright (c) 2021-2025 Skia4Delphi Project.
 
  Use of this source code is governed by the MIT license that can be
  found in the LICENSE file.
@@ -146,8 +146,8 @@
                 <Excluded_Packages/>
             </Delphi.Personality>
             <Platforms>
-                <Platform value="Android">True</Platform>
-                <Platform value="Android64">True</Platform>
+                <Platform value="Android">False</Platform>
+                <Platform value="Android64">False</Platform>
                 <Platform value="Linux64">False</Platform>
                 <Platform value="OSX32">False</Platform>
                 <Platform value="OSX64">False</Platform>

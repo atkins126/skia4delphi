@@ -2,7 +2,7 @@
 {                                                                        }
 {                              Skia4Delphi                               }
 {                                                                        }
-{ Copyright (c) 2021-2024 Skia4Delphi Project.                           }
+{ Copyright (c) 2021-2025 Skia4Delphi Project.                           }
 {                                                                        }
 { Use of this source code is governed by the MIT license that can be     }
 { found in the LICENSE file.                                             }
@@ -145,7 +145,11 @@ type
     procedure SetMatrix(const AMatrix: TMatrix); override;
     {$ENDIF}
     property Canvas: ISkCanvas read FCanvas;
+    {$IF CompilerVersion <= 36}
     procedure SetSize(const AWidth, AHeight: Integer); override; final;
+    {$ELSE}
+    procedure SetSize(const AWidth, AHeight: Single); override; final;
+    {$ENDIF}
     class function GetCanvasStyle: TCanvasStyles; override;
     class function QualityToSamplingOptions(const AQuality: TCanvasQuality; const AHighSpeed: Boolean = False): TSkSamplingOptions;
   end;
@@ -178,7 +182,11 @@ type
     FSurface: TSkSurface;
   strict protected
     {$IFDEF MSWINDOWS}
+    {$IF CompilerVersion <= 36}
     constructor CreateFromWindow(const AParent: TWindowHandle; const AWidth, AHeight: Integer; const AQuality: TCanvasQuality = TCanvasQuality.SystemDefault); override;
+    {$ELSE}
+    constructor CreateFromWindow(const AParent: TWindowHandle; const AWidth, AHeight: Single; const AQuality: TCanvasQuality = TCanvasQuality.SystemDefault); override;
+    {$ENDIF}
     {$ENDIF}
     function BeginCanvas(const AContextHandle: THandle): ISkCanvas; override;
     procedure EndCanvas(const AContextHandle: THandle); override;
@@ -290,7 +298,11 @@ type
     FSharedContext: IGrSharedContext;
   strict protected
     FGrDirectContext: IGrDirectContext;
+    {$IF CompilerVersion <= 36}
     constructor CreateFromWindow(const AParent: TWindowHandle; const AWidth, AHeight: Integer; const AQuality: TCanvasQuality = TCanvasQuality.SystemDefault); override;
+    {$ELSE}
+    constructor CreateFromWindow(const AParent: TWindowHandle; const AWidth, AHeight: Single; const AQuality: TCanvasQuality = TCanvasQuality.SystemDefault); override;
+    {$ENDIF}
     function BeginCanvas(const AContextHandle: THandle): ISkCanvas; override;
     function CreateSharedContext: IGrSharedContext; virtual; abstract;
     procedure EndCanvas(const AContextHandle: THandle); override;
@@ -1666,6 +1678,9 @@ begin
   // we'll enforce it to always be true, regardless of the Quality property.
   FAntiAlias := True;
   SkInitialize;
+  {$IFDEF MODULATE_CANVAS}
+  FModulateColor := TAlphaColors.White;
+  {$ENDIF}
   inherited;
 end;
 
@@ -1683,10 +1698,68 @@ end;
 
 procedure TSkCanvasCustom.BeginPaint(const ARect: TRectF;
   const AOpacity: Single; var ABrushData: TBrushData);
+
+  procedure GetGradientColorsAndPositions(AGradient: TGradient; AResultReverted: Boolean;
+    out AColors: TArray<TAlphaColor>; out APositions: TArray<Single>);
+  var
+    I: Integer;
+    LColor: TAlphaColor;
+    LPosition: Single;
+  begin
+    SetLength(AColors, AGradient.Points.Count);
+    SetLength(APositions, AGradient.Points.Count);
+    for I := 0 to AGradient.Points.Count - 1 do
+    begin
+      AColors[I] := AGradient.Points[I].Color;
+      APositions[I] := AGradient.Points[I].Offset;
+    end;
+    // According to the Skia documentation, only gradient positions within the range [0, 1] are allowed.
+    // This differs from FMX, which permits positions outside the [0, 1] range.
+    // We need to adapt the positions and colors to replicate FMX's behavior.
+    for I := 0 to Length(APositions) - 1 do
+    begin
+      if CompareValue(APositions[I], 0, TEpsilon.Vector) <> LessThanValue then
+      begin
+        if I > 0 then
+        begin
+          AColors := [AGradient.InterpolateColor(0)] + Copy(AColors, I, Length(AColors) - I);
+          APositions := [0] + Copy(APositions, I, Length(APositions) - I);
+        end;
+        Break;
+      end;
+    end;
+    for I := Length(APositions) - 1 downto 0 do
+    begin
+      if CompareValue(APositions[I], 1, TEpsilon.Vector) <> GreaterThanValue then
+      begin
+        if I < Length(APositions) - 1 then
+        begin
+          AColors := Copy(AColors, 0, I + 1) + [AGradient.InterpolateColor(1)];
+          APositions := Copy(APositions, 0, I + 1) + [1];
+        end;
+        Break;
+      end;
+    end;
+    // Radial gradient of Skia works on reverted order in relation to FMX
+    if AResultReverted then
+    begin
+      for I := 0 to (Length(APositions) div 2) - 1 do
+      begin
+        LColor := AColors[I];
+        AColors[I] := AColors[High(AColors) - I];
+        AColors[High(AColors) - I] := LColor;
+        LPosition := APositions[I];
+        APositions[I] := 1 - APositions[High(APositions) - I];
+        APositions[High(APositions) - I] := 1 - LPosition;
+      end;
+      if Length(APositions) mod 2 <> 0 then
+        APositions[Length(APositions) div 2] := 1 - APositions[Length(APositions) div 2];
+    end
+  end;
+
 const
-  WrapMode: array[TWrapMode.Tile..TWrapMode.TileOriginal] of TSkTileMode = (TSkTileMode.Repeat, TSkTileMode.Clamp);
+  WrapMode: array[TWrapMode.Tile..TWrapMode.TileOriginal] of TSkTileMode = (TSkTileMode.Repeat, TSkTileMode.Decal);
 var
-  I: Integer;
   LCache: TSkImage;
   LCenter: TPointF;
   LColors: TArray<TAlphaColor>;
@@ -1697,50 +1770,54 @@ var
   LRadiusX: Single;
   LRadiusY: Single;
 begin
+  {$IFDEF MODULATE_CANVAS}
+  if FModulateColor <> TAlphaColors.White then
+    ABrushData.Paint.ColorFilter := TSkColorFilter.MakeBlend(FModulateColor, TSkBlendMode.Modulate);
+  {$ENDIF}
   ABrushData.Paint.AntiAlias := FAntiAlias;
   case ABrushData.Brush.Kind of
-    TBrushKind.Solid: ABrushData.Paint.Color := MakeColor(ABrushData.Brush.Color, AOpacity);
+    TBrushKind.Solid:
+      begin
+        ABrushData.Paint.Color := ABrushData.Brush.Color;
+        ABrushData.Paint.AlphaF := ABrushData.Paint.AlphaF * AOpacity;
+      end;
     TBrushKind.Gradient:
       begin
-        SetLength(LColors, ABrushData.Brush.Gradient.Points.Count);
-        SetLength(LPositions, ABrushData.Brush.Gradient.Points.Count);
-        case ABrushData.Brush.Gradient.Style of
-          TGradientStyle.Linear:
-            begin
-              for I := 0 to ABrushData.Brush.Gradient.Points.Count - 1 do
+        ABrushData.Paint.AlphaF := AOpacity;
+        if ABrushData.Brush.Gradient.Points.Count = 0 then
+          ABrushData.Paint.Shader := TSkShader.MakeEmpty
+        else
+        begin
+          case ABrushData.Brush.Gradient.Style of
+            TGradientStyle.Linear:
               begin
-                LColors[I]    := MakeColor(ABrushData.Brush.Gradient.Points[I].Color, AOpacity);
-                LPositions[I] := ABrushData.Brush.Gradient.Points[I].Offset;
+                GetGradientColorsAndPositions(ABrushData.Brush.Gradient, False, LColors, LPositions);
+                ABrushData.Paint.Shader := TSkShader.MakeGradientLinear(TPointF.Create(ARect.Left + ABrushData.Brush.Gradient.StartPosition.X * ARect.Width, ARect.Top + ABrushData.Brush.Gradient.StartPosition.Y * ARect.Height), TPointF.Create(ARect.Left + ABrushData.Brush.Gradient.StopPosition.X * ARect.Width, ARect.Top + ABrushData.Brush.Gradient.StopPosition.Y * ARect.Height), LColors, LPositions);
               end;
-              ABrushData.Paint.Shader := TSkShader.MakeGradientLinear(TPointF.Create(ARect.Left + ABrushData.Brush.Gradient.StartPosition.X * ARect.Width, ARect.Top + ABrushData.Brush.Gradient.StartPosition.Y * ARect.Height), TPointF.Create(ARect.Left + ABrushData.Brush.Gradient.StopPosition.X * ARect.Width, ARect.Top + ABrushData.Brush.Gradient.StopPosition.Y * ARect.Height), LColors, LPositions);
-            end;
-          TGradientStyle.Radial:
-            begin
-              for I := 0 to ABrushData.Brush.Gradient.Points.Count - 1 do
+            TGradientStyle.Radial:
               begin
-                LColors[ABrushData.Brush.Gradient.Points.Count - 1 - I]    := MakeColor(ABrushData.Brush.Gradient.Points[I].Color, AOpacity);
-                LPositions[ABrushData.Brush.Gradient.Points.Count - 1 - I] := 1 - ABrushData.Brush.Gradient.Points[I].Offset;
-              end;
-              LCenter  := TPointF.Create(ARect.Width * ABrushData.Brush.Gradient.RadialTransform.RotationCenter.X, ARect.Height * ABrushData.Brush.Gradient.RadialTransform.RotationCenter.Y) + ARect.TopLeft;
-              LRadiusX := ABrushData.Brush.Gradient.RadialTransform.Scale.X * (ARect.Width  / 2);
-              LRadiusY := ABrushData.Brush.Gradient.RadialTransform.Scale.Y * (ARect.Height / 2);
-              if not SameValue(LRadiusX, LRadiusY, Epsilon) then
-              begin
-                if LRadiusX < LRadiusY then
+                GetGradientColorsAndPositions(ABrushData.Brush.Gradient, True, LColors, LPositions);
+                LCenter  := TPointF.Create(ARect.Width * ABrushData.Brush.Gradient.RadialTransform.RotationCenter.X, ARect.Height * ABrushData.Brush.Gradient.RadialTransform.RotationCenter.Y) + ARect.TopLeft;
+                LRadiusX := ABrushData.Brush.Gradient.RadialTransform.Scale.X * (ARect.Width  / 2);
+                LRadiusY := ABrushData.Brush.Gradient.RadialTransform.Scale.Y * (ARect.Height / 2);
+                if not SameValue(LRadiusX, LRadiusY, Epsilon) then
                 begin
-                  LRadius := LRadiusY;
-                  LMatrix := TMatrix.CreateScaling(LRadiusX / LRadiusY, 1) * TMatrix.CreateTranslation(LCenter.X - (LCenter.X * (LRadiusX / LRadiusY)), 0);
+                  if LRadiusX < LRadiusY then
+                  begin
+                    LRadius := LRadiusY;
+                    LMatrix := TMatrix.CreateScaling(LRadiusX / LRadiusY, 1) * TMatrix.CreateTranslation(LCenter.X - (LCenter.X * (LRadiusX / LRadiusY)), 0);
+                  end
+                  else
+                  begin
+                    LRadius := LRadiusX;
+                    LMatrix := TMatrix.CreateScaling(1, LRadiusY / LRadiusX) * TMatrix.CreateTranslation(0, LCenter.Y - (LCenter.Y * (LRadiusY / LRadiusX)));
+                  end;
+                  ABrushData.Paint.Shader := TSkShader.MakeGradientRadial(LCenter, LRadius, LColors, LMatrix, LPositions);
                 end
                 else
-                begin
-                  LRadius := LRadiusX;
-                  LMatrix := TMatrix.CreateScaling(1, LRadiusY / LRadiusX) * TMatrix.CreateTranslation(0, LCenter.Y - (LCenter.Y * (LRadiusY / LRadiusX)));
-                end;
-                ABrushData.Paint.Shader := TSkShader.MakeGradientRadial(LCenter, LRadius, LColors, LMatrix, LPositions);
-              end
-              else
-                ABrushData.Paint.Shader := TSkShader.MakeGradientRadial(LCenter, LRadiusX, LColors, LPositions);
-            end;
+                  ABrushData.Paint.Shader := TSkShader.MakeGradientRadial(LCenter, LRadiusX, LColors, LPositions);
+              end;
+          end;
         end;
       end;
     TBrushKind.Bitmap:
@@ -1759,7 +1836,7 @@ begin
               if ABrushData.Brush.Bitmap.WrapMode = TWrapMode.TileStretch then
                 ABrushData.Paint.Shader := LCache.MakeShader(TMatrix.CreateScaling(ARect.Width / LCache.Width, ARect.Height / LCache.Height) * TMatrix.CreateTranslation(ARect.Left, ARect.Top), GetSamplingOptions(RectF(0, 0, LCache.Width, LCache.Height), ARect, True))
               else
-                ABrushData.Paint.Shader := LCache.MakeShader(GetSamplingOptions(True), WrapMode[ABrushData.Brush.Bitmap.WrapMode], WrapMode[ABrushData.Brush.Bitmap.WrapMode]);
+                ABrushData.Paint.Shader := LCache.MakeShader(TMatrix.CreateTranslation(ARect.Left, ARect.Top), GetSamplingOptions(False), WrapMode[ABrushData.Brush.Bitmap.WrapMode], WrapMode[ABrushData.Brush.Bitmap.WrapMode]);
             end;
           end;
           if LCache = nil then
@@ -1774,7 +1851,7 @@ begin
                 if ABrushData.Brush.Bitmap.WrapMode = TWrapMode.TileStretch then
                   ABrushData.Paint.Shader := LImage.MakeShader(TMatrix.CreateScaling(ARect.Width / LImage.Width, ARect.Height / LImage.Height) * TMatrix.CreateTranslation(ARect.Left, ARect.Top), GetSamplingOptions(RectF(0, 0, LImage.Width, LImage.Height), ARect, True))
                 else
-                  ABrushData.Paint.Shader := LImage.MakeShader(GetSamplingOptions(True), WrapMode[ABrushData.Brush.Bitmap.WrapMode], WrapMode[ABrushData.Brush.Bitmap.WrapMode]);
+                  ABrushData.Paint.Shader := LImage.MakeShader(TMatrix.CreateTranslation(ARect.Left, ARect.Top), GetSamplingOptions(False), WrapMode[ABrushData.Brush.Bitmap.WrapMode], WrapMode[ABrushData.Brush.Bitmap.WrapMode]);
               end;
             end;
           end;
@@ -1891,6 +1968,23 @@ end;
 
 function TSkCanvasCustom.DoBeginScene({$IF CompilerVersion < 35}const {$ENDIF}AClipRects: PClipRects;
   AContextHandle: THandle): Boolean;
+
+  procedure ClipRects(const ACanvas: ISkCanvas; const AClipRects: TClipRects); inline;
+  var
+    LPathBuilder: ISkPathBuilder;
+    I: Integer;
+  begin
+    if Length(AClipRects) > 1 then
+    begin
+      LPathBuilder := TSkPathBuilder.Create;
+      for I := 0 to Length(AClipRects) - 1 do
+        LPathBuilder.AddRect(AClipRects[I]);
+      ACanvas.ClipPath(LPathBuilder.Snapshot, TSkClipOp.Intersect, True);
+    end
+    else if Length(AClipRects) = 1 then
+      ACanvas.ClipRect(AClipRects[0], TSkClipOp.Intersect, True);
+  end;
+
 begin
   Result := inherited;
   if Result then
@@ -1900,7 +1994,10 @@ begin
     if Result then
     begin
       FContextHandle := AContextHandle;
+      Canvas.Save;
       Canvas.SetMatrix(Matrix * TMatrix.CreateScaling(Scale, Scale));
+      if AClipRects <> nil then
+        ClipRects(Canvas, AClipRects^);
     end;
   end;
 end;
@@ -1942,8 +2039,8 @@ begin
     LPaint := TSkPaint.Create;
     LPaint.AlphaF := AOpacity;
     {$IFDEF MODULATE_CANVAS}
-    if FModulateColor <> TAlphaColors.Null then
-      LPaint.ColorFilter := TSkColorFilter.MakeBlend(FModulateColor, TSkBlendMode.SrcIn);
+    if FModulateColor <> TAlphaColors.White then
+      LPaint.ColorFilter := TSkColorFilter.MakeBlend(FModulateColor, TSkBlendMode.Modulate);
     {$ENDIF}
     LCache := nil;
     if (ABitmap.CanvasClass.InheritsFrom(TSkCanvasCustom)) and (SupportsCachedImage) then
@@ -1974,6 +2071,8 @@ var
   LBrushData: TBrushData;
   LPaint: TSkPaint;
 begin
+  if IsZero(ARect.Width) or IsZero(ARect.Height) then
+    Exit;
   LPaint := BeginPaintWithStrokeBrush(ABrush, ARect, AOpacity, LBrushData);
   if LPaint <> nil then
   try
@@ -2023,6 +2122,8 @@ var
   LBrushData: TBrushData;
   LPaint: TSkPaint;
 begin
+  if IsZero(ARect.Width) or IsZero(ARect.Height) then
+    Exit;
   LPaint := BeginPaintWithStrokeBrush(ABrush, ARect, AOpacity, LBrushData);
   if LPaint <> nil then
   begin
@@ -2036,6 +2137,7 @@ end;
 
 procedure TSkCanvasCustom.DoEndScene;
 begin
+  Canvas.Restore;
   EndCanvas(FContextHandle);
   inherited;
 end;
@@ -2046,6 +2148,8 @@ var
   LBrushData: TBrushData;
   LPaint: TSkPaint;
 begin
+  if IsZero(ARect.Width) or IsZero(ARect.Height) then
+    Exit;
   LPaint := BeginPaintWithBrush(ABrush, ARect, AOpacity, LBrushData);
   if LPaint <> nil then
   try
@@ -2078,6 +2182,8 @@ var
   LBrushData: TBrushData;
   LPaint: TSkPaint;
 begin
+  if IsZero(ARect.Width) or IsZero(ARect.Height) then
+    Exit;
   LPaint := BeginPaintWithBrush(ABrush, ARect, AOpacity, LBrushData);
   if LPaint <> nil then
   try
@@ -2205,11 +2311,18 @@ class function TSkCanvasCustom.QualityToSamplingOptions(
   const AHighSpeed: Boolean): TSkSamplingOptions;
 begin
   if AHighSpeed then
-    Result := TSkSamplingOptions.Create(TSkFilterMode.Nearest, TSkMipmapMode.None)
+  begin
+    case AQuality of
+      TCanvasQuality.SystemDefault,
+      TCanvasQuality.HighQuality: Result := TSkSamplingOptions.Medium;
+    else
+      Result := TSkSamplingOptions.Low;
+    end;
+  end
   else
   begin
     case AQuality of
-      TCanvasQuality.SystemDefault: TSkSamplingOptions.Medium;
+      TCanvasQuality.SystemDefault,
       TCanvasQuality.HighQuality: Result := TSkSamplingOptions.High;
     else
       Result := TSkSamplingOptions.Low;
@@ -2241,6 +2354,7 @@ end;
 
 {$ENDIF}
 
+{$IF CompilerVersion <= 36}
 procedure TSkCanvasCustom.SetSize(const AWidth, AHeight: Integer);
 begin
   if (Width <> AWidth) or (Height <> AHeight) then
@@ -2249,6 +2363,16 @@ begin
     Resized;
   end;
 end;
+{$ELSE}
+procedure TSkCanvasCustom.SetSize(const AWidth, AHeight: Single);
+begin
+  if not SameValue(Width, AWidth, TEpsilon.Matrix) or not SameValue(Height, AHeight, TEpsilon.Matrix) then
+  begin
+    inherited;
+    Resized;
+  end;
+end;
+{$ENDIF}
 
 function TSkCanvasCustom.SupportsCachedImage: Boolean;
 begin
@@ -2317,7 +2441,7 @@ begin
   begin
     LBitmap := TSkBitmapHandle(Bitmap.Handle);
     if LBitmap.Pixels = nil then
-      LBitmap.FPixels := AllocMem(LBitmap.Width * LBitmap.Height * PixelFormatBytes[LBitmap.PixelFormat]);
+      LBitmap.FPixels := AllocMem(NativeInt(LBitmap.Width) * LBitmap.Height * PixelFormatBytes[LBitmap.PixelFormat]);
     FBitmapSurface := TSkSurface.MakeRasterDirect(TSkImageInfo.Create(LBitmap.Width, LBitmap.Height, SkFmxColorType[LBitmap.PixelFormat]), LBitmap.Pixels, LBitmap.Width * PixelFormatBytes[LBitmap.PixelFormat]);
     Result         := FBitmapSurface.Canvas;
   end
@@ -2333,8 +2457,13 @@ end;
 
 {$IFDEF MSWINDOWS}
 
+{$IF CompilerVersion <= 36}
 constructor TSkCanvasBase.CreateFromWindow(const AParent: TWindowHandle;
   const AWidth, AHeight: Integer; const AQuality: TCanvasQuality);
+{$ELSE}
+constructor TSkCanvasBase.CreateFromWindow(const AParent: TWindowHandle;
+  const AWidth, AHeight: Single; const AQuality: TCanvasQuality);
+{$ENDIF}
 var
   LParentHandle: TWinWindowHandle;
 begin
@@ -2525,8 +2654,13 @@ begin
   Result := TGrBitmapHandle.Create(AWidth, AHeight, APixelFormat);
 end;
 
+{$IF CompilerVersion <= 36}
 constructor TGrCanvas.CreateFromWindow(const AParent: TWindowHandle;
   const AWidth, AHeight: Integer; const AQuality: TCanvasQuality);
+{$ELSE}
+constructor TGrCanvas.CreateFromWindow(const AParent: TWindowHandle;
+  const AWidth, AHeight: Single; const AQuality: TCanvasQuality);
+{$ENDIF}
 begin
   inherited;
   if not FInitialized then
@@ -3983,12 +4117,9 @@ end;
 {$HPPEMIT END '    using ::Fmx::Skia::Canvas::TSkCanvasCustom;'}
 {$HPPEMIT END '    using ::Fmx::Skia::Canvas::TSkCanvasCustomClass;'}
 {$HPPEMIT END '    using ::Fmx::Skia::Canvas::TSkTextLayout;'}
-{$HPPEMIT END '    typedef TSkCanvasBaseClass (__fastcall *TDefaultSkiaRenderCanvasClassFunc)(void);'}
-{$HPPEMIT END '    typedef void (__fastcall *TRegisterSkiaRenderCanvasProc)(const ::Fmx::Skia::Canvas::TSkCanvasBaseClass ACanvasClass, const bool APriority, '}
-{$HPPEMIT END '        const ::System::DelphiInterface<System::Sysutils::TFunc__1<bool> > AIsSupportedFunc);'}
-{$HPPEMIT END '    static ::System::StaticArray<int, 3>& CanvasQualitySampleCount = ::Fmx::Skia::Canvas::CanvasQualitySampleCount;'}
-{$HPPEMIT END '    static const TDefaultSkiaRenderCanvasClassFunc DefaultSkiaRenderCanvasClass = ::Fmx::Skia::Canvas::DefaultSkiaRenderCanvasClass;'}
-{$HPPEMIT END '    static const TRegisterSkiaRenderCanvasProc RegisterSkiaRenderCanvas = ::Fmx::Skia::Canvas::RegisterSkiaRenderCanvas;'}
+{$HPPEMIT END '    using ::Fmx::Skia::Canvas::CanvasQualitySampleCount;'}
+{$HPPEMIT END '    using ::Fmx::Skia::Canvas::DefaultSkiaRenderCanvasClass;'}
+{$HPPEMIT END '    using ::Fmx::Skia::Canvas::RegisterSkiaRenderCanvas;'}
 {$HPPEMIT END '#endif'}
 
 {$REGION '- Canvas Registration'}
